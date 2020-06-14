@@ -157,9 +157,73 @@ ggplot(data = fra_maize_df_a) +
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Maize Harvested \nArea (ha)") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
+fpotA <- "France/Area/Potatoes/fr_potato_area.tif"
+france_potato_area <- raster(fpotA)
+plot(france_potato_area)
+plot(fr_shp, add=T)
+fra_potat_df_a <- as.data.frame(france_potato_area, xy=TRUE)
+
+ggplot(data = fra_potat_df_a) +
+  geom_raster(aes(x = x, y = y, fill = fr_potato_area)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Potato Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+frapA <- "France/Area/Rapeseed/fr_rape_area.tif"
+france_rapeseed_area <- raster(frapA)
+plot(france_rapeseed_area)
+plot(fr_shp, add=T)
+fra_rape_df_a <- as.data.frame(france_rapeseed_area, xy=TRUE)
+
+ggplot(data = fra_rape_df_a) +
+  geom_raster(aes(x = x, y = y, fill = fr_rape_area)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Rapeseed Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
+fsugA <- "France/Area/Sugarbeet/fr_sugbeet_area.tif"
+france_beet_area <- raster(fsugA)
+plot(france_beet_area)
+plot(fr_shp, add=T)
+fra_beet_df_a <- as.data.frame(france_beet_area, xy=TRUE)
+
+ggplot(data = fra_beet_df_a) +
+  geom_raster(aes(x = x, y = y, fill = fr_sugbeet_area)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarbeet \nHarvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+fwheatA <- "France/Area/Wheat/fr_wheat_area.tif"
+france_wheat_a <- raster(fwheatA)
+plot(france_wheat_a)
+plot(fr_shp, add=T)
+fra_wheat_df_a <- as.data.frame(france_wheat_a, xy=TRUE)
+
+ggplot(data = fra_wheat_df_a) +
+  geom_raster(aes(x = x, y = y, fill = fr_wheat_area)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Wheat Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
-
-
+### OK now for the big guns. We are downloading the FAOstat time series data for 
+# area and yields in france since idk how long but a long long time!! This is the 
+# moment where we freak - there will be another freak when we get to temp and precipitation.
+# Sand however will be easy so that will be the congrats you made it moment.
