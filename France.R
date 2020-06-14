@@ -9,6 +9,7 @@ library("ggplot2")
 library(tmap)
 library(RColorBrewer)
 library(shapefiles)
+library(tidyverse)
 
 # First we start off with visualising the yield over France
 
@@ -227,3 +228,11 @@ ggplot(data = fra_wheat_df_a) +
 # area and yields in france since idk how long but a long long time!! This is the 
 # moment where we freak - there will be another freak when we get to temp and precipitation.
 # Sand however will be easy so that will be the congrats you made it moment.
+
+import("France/France_crop_1961_2018.csv")
+convert("France/France_crop_1961_2018.csv", "France/France_crop_1961_2018.rds")
+import("France/France_crop_1961_2018.rds")
+Dat_faostat_fr <- read_rds("France/France_crop_1961_2018.rds")
+
+
+## Well that was much easier than expected... Now onto the next bit - temp and precipitation
