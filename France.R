@@ -1,6 +1,7 @@
 install.packages("rio")
 install.packages("rgdal")
 install.packages("sp")
+install.packages("ncdf")
 library("rio")
 library("rgdal")
 library("raster")
@@ -236,3 +237,7 @@ Dat_faostat_fr <- read_rds("France/France_crop_1961_2018.rds")
 
 
 ## Well that was much easier than expected... Now onto the next bit - temp and precipitation
+
+
+
+
