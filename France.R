@@ -2,15 +2,27 @@ install.packages("rio")
 install.packages("rgdal")
 install.packages("sp")
 install.packages("ncdf")
-library("rio")
-library("rgdal")
-library("raster")
-library("sp")
-library("ggplot2")
+install.packages("chron")
+install.packages("ncdf4")
+install.packages("rasterVis")
+install.packages("gpclib")
+library(rio)
+library(rgdal)
+library(raster)
+library(ncdf4)
+library(sp)
+library(ggplot2)
 library(tmap)
 library(RColorBrewer)
 library(shapefiles)
 library(tidyverse)
+library(chron)
+library(tibble)
+library(lattice)
+library(ncdf4)
+library(rasterVis)
+library(maptools)
+
 
 # First we start off with visualising the yield over France
 
@@ -20,6 +32,7 @@ fr_shp <- readOGR(dsn=path.expand("~/Desktop/Diss-data/France/Shapefiles/Export_
 afg <- fr_shp@polygons
 shape_fr <- as.data.frame(afg[[1]]@Polygons[[1]]@coords)
 plot(fr_shp, col=NA)
+
 
 fbar <- "France/Total_Yield_kgha/Barley/barley-france.tif"
 france_barley <- raster(fbar)
@@ -238,6 +251,60 @@ Dat_faostat_fr <- read_rds("France/France_crop_1961_2018.rds")
 
 ## Well that was much easier than expected... Now onto the next bit - temp and precipitation
 
+## Now precipitation as a dataframe tibble.
 
+Stk_precip <- brick("Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Shp_Frr <- shapefile("~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp")
+Stk_precip <- Stk_precip %>% crop(Shp_Frr)
+plot(Stk_precip[[1:12]])
+print(Stk_precip[[1]])
+summary(Stk_precip)
+
+
+raspt <- rasterToPoints(Stk_precip)
+dt <- data_frame(Layer = names(Stk_precip), dttm = as.Date(getZ(Stk_precip)))
+raspt2 <- raspt %>%
+  as_data_frame() %>%
+  rename(lon = x, lat = y) %>%
+  gather(Layer, value, -lon, -lat) %>%
+  left_join(dt, by = "Layer") %>%
+  dplyr::select(lon, lat, date, value)
+colnames(raspt2)
+raspt2 <- raspt2 %>% rename("x" = "lon") 
+raspt2 <- raspt2 %>% rename("y" = "lat")
+
+dates <- raspt2$dttm
+str(dates)
+raspt2$month <- month(dates)
+raspt2$year <- year(dates)
+raspt2$dttm <- NULL
+raspt2 <- raspt2 %>% rename("precip_mm" = "value")
+
+# Now for temperature
+
+Stk_temp <- brick("Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_temp <- Stk_temp %>% crop(Shp_Frr)
+plot(Stk_temp[[1:12]])
+print(Stk_temp[[1]])
+summary(Stk_temp)
+
+fr_temp <- rasterToPoints(Stk_temp)
+dtt <- data_frame(Layer = names(temp), dttm = as.Date(getZ(temp)))
+fr_temp2 <- fr_temp %>%
+  as_data_frame() %>%
+  rename(lon = x, lat = y) %>%
+  gather(Layer, value, -lon, -lat) %>%
+  left_join(dt, by = "Layer") %>%
+  dplyr::select(lon, lat, date, value)
+colnames(fr_temp2)
+fr_temp2 <- fr_temp2 %>% rename("x" = "lon") 
+fr_temp2 <- fr_temp2 %>% rename("y" = "lat")
+
+dates <- fr_temp2$dttm
+str(dates)
+fr_temp2$month <- month(dates)
+fr_temp2$year <- year(dates)
+fr_temp2$dttm <- NULL
+fr_temp2 <- fr_temp2 %>% rename("temp_centigrade" = "value")
 
 
