@@ -19,9 +19,12 @@ library(tidyverse)
 library(chron)
 library(tibble)
 library(lattice)
-library(ncdf4)
 library(rasterVis)
 library(maptools)
+library(lubridate)
+library(tidync)
+library(gpclib)
+library(dplyr)
 
 
 # First we start off with visualising the yield over France
@@ -257,18 +260,23 @@ Stk_precip <- brick("Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189
 Shp_Frr <- shapefile("~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp")
 Stk_precip <- Stk_precip %>% crop(Shp_Frr)
 plot(Stk_precip[[1:12]])
-print(Stk_precip[[1]])
+print(Stk_precip[[2]])
 summary(Stk_precip)
 
+dates <- as.array(Stk_precip@z)
+dates <- dates$time[dates$time != "00"]
+
+dates <- as.Date(dates, format="%Y-%m-%d")
+Stk_precip <- setZ(Stk_precip, as.Date(dates))
 
 raspt <- rasterToPoints(Stk_precip)
-dt <- data_frame(Layer = names(Stk_precip), dttm = as.Date(getZ(Stk_precip)))
+dt <- tibble(Layer = names(Stk_precip), dttm = as.Date(getZ(Stk_precip)))
 raspt2 <- raspt %>%
   as_data_frame() %>%
   rename(lon = x, lat = y) %>%
   gather(Layer, value, -lon, -lat) %>%
   left_join(dt, by = "Layer") %>%
-  dplyr::select(lon, lat, date, value)
+  dplyr::select(lon, lat, dttm, value)
 colnames(raspt2)
 raspt2 <- raspt2 %>% rename("x" = "lon") 
 raspt2 <- raspt2 %>% rename("y" = "lat")
@@ -279,23 +287,30 @@ raspt2$month <- month(dates)
 raspt2$year <- year(dates)
 raspt2$dttm <- NULL
 raspt2 <- raspt2 %>% rename("precip_mm" = "value")
+raspt2$temp_centigrade <- NULL
 
 # Now for temperature
 
 Stk_temp <- brick("Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Stk_temp <- Stk_temp %>% crop(Shp_Frr)
 plot(Stk_temp[[1:12]])
-print(Stk_temp[[1]])
+print(Stk_temp[[2]])
 summary(Stk_temp)
 
+dates <- as.array(Stk_temp@z)
+dates <- dates$time[dates$time != "00"]
+
+dates <- as.Date(dates, format="%Y-%m-%d")
+Stk_temp <- setZ(Stk_temp, as.Date(dates))
+
 fr_temp <- rasterToPoints(Stk_temp)
-dtt <- data_frame(Layer = names(temp), dttm = as.Date(getZ(temp)))
+dtt <- data_frame(Layer = names(Stk_temp), dttm = as.Date(getZ(Stk_temp)))
 fr_temp2 <- fr_temp %>%
   as_data_frame() %>%
   rename(lon = x, lat = y) %>%
   gather(Layer, value, -lon, -lat) %>%
-  left_join(dt, by = "Layer") %>%
-  dplyr::select(lon, lat, date, value)
+  left_join(dtt, by = "Layer") %>%
+  dplyr::select(lon, lat, dttm, value)
 colnames(fr_temp2)
 fr_temp2 <- fr_temp2 %>% rename("x" = "lon") 
 fr_temp2 <- fr_temp2 %>% rename("y" = "lat")
@@ -305,6 +320,64 @@ str(dates)
 fr_temp2$month <- month(dates)
 fr_temp2$year <- year(dates)
 fr_temp2$dttm <- NULL
+fr_temp2$precip_mm <- NULL
 fr_temp2 <- fr_temp2 %>% rename("temp_centigrade" = "value")
+
+France_weather <- merge(fr_temp2,raspt2,by=c('x', 'y', 'month', 'year'))
+
+# Now for evapotranspiration - THIS IS PAUSED UNTIL I CAN GET SOME ANSWERS REGARDING PET_MM
+# UNTIL THEN NOT DEALING WITH THIS!!!!!
+gettingthere <- tidync::tidync("Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+
+Stk_evp <- brick("Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_evp <- Stk_evp %>% crop(Shp_Frr)
+
+plot(Stk_evp[[1:12]])
+print(Stk_evp[[1]])
+summary(Stk_evp)
+
+dates <- as.array(Stk_evp@z)
+dates <- dates$time[dates$time != "00"]
+
+dates <- as.Date(dates, format="%Y-%m-%d")
+
+evp <- setZ(Stk_evp, as.Date(dates))
+
+fr_evp <- rasterToPoints(Stk_evp)
+Stk_evp <- dropLayer(Stk_evp, "band")
+dttt <- data_frame(Layer = names(Stk_evp), dttm = as.Date(getZ(Stk_evp)))
+fr_evp2 <- fr_evp %>%
+  as_data_frame() %>%
+  rename(lon = x, lat = y) %>%
+  gather(Layer, value, -lon, -lat) %>%
+  left_join(dttt, by = "Layer") %>%
+  dplyr::select(lon, lat, dttm, value)
+colnames(fr_evp2)
+fr_evp2 <- fr_evp2 %>% rename("x" = "lon") 
+fr_evp2 <- fr_evp2 %>% rename("y" = "lat")
+
+dates <- fr_evp2$dttm
+str(dates)
+fr_evp2$month <- month(dates)
+fr_evp2$year <- year(dates)
+fr_evp2$dttm <- NULL
+fr_evp2$precip_mm <- NULL
+fr_evp2 <- fr_evp2 %>% rename("pet_mm" = "value")
+
+# I think these values are in meters so let's convert them to mm
+fr_evp2$pet_mm <- fr_evp2$pet_mm*1000
+
+France_weather <- merge(France_weather,fr_evp2,by=c('x', 'y', 'month', 'year'))
+France_weather$pet_mm.x <- NULL
+France_weather$pet_mm.y <- NULL
+
+# OK we have merged everything together!!! Now let's make it a nested tibble
+# THIS HAS NOT BEEN PROVED TO WORK SO WE'RE NOT TOUCHING IT UNTIL WE CAN FIGURE OUT AND UPLOAD PET_MM!!!
+France_weather2 <- France_weather
+France_weather$data_full <- list(France_weather$month, France_weather$year, France_weather$temp_centigrade, France_weather$precip_mm, France_weather$pet_mm)
+
+
+
+
 
 
