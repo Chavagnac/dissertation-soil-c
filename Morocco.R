@@ -361,3 +361,7 @@ Mor_weather <- Mor_weather[, c(1, 2, 4, 3)]
 print(Mor_weather[[4]][[1]])
 Mor_weather <- Mor_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
 Mor_weather$data <- NULL
+
+saveRDS(Mor_weather, "~/Desktop/Diss-data/Morocco/Morocco_weather.rds")
+
+

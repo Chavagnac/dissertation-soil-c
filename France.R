@@ -259,7 +259,7 @@ Dat_faostat_fr <- read_rds("~/Desktop/Diss-data/France/France_crop_1961_2018.rds
 
 ## Now precipitation as a dataframe tibble.
 
-Stk_precip <- brick("Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_precip <- brick("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Shp_Frr <- shapefile("~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp")
 Stk_precip <- Stk_precip %>% crop(Shp_Frr)
 plot(Stk_precip[[1:12]])
@@ -296,7 +296,7 @@ raspt2$temp_centigrade <- NULL
 
 # Now for temperature
 
-Stk_temp <- brick("Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_temp <- brick("~/Desktop/Global Weather/Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Stk_temp <- Stk_temp %>% crop(Shp_Frr)
 plot(Stk_temp[[1:12]])
 print(Stk_temp[[2]])
@@ -330,10 +330,9 @@ fr_temp2 <- fr_temp2 %>% rename("temp_centigrade" = "value")
 
 France_weather <- merge(fr_temp2,raspt2,by=c('x', 'y', 'month', 'year'))
 
-# Now for evapotranspiration - THIS IS PAUSED UNTIL I CAN GET SOME ANSWERS REGARDING PET_MM
-# UNTIL THEN NOT DEALING WITH THIS!!!!!
+# Now for evapotranspiration
 
-Stk_evp <- brick("Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_evp <- brick("~/Desktop/Global Weather/Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Stk_evp <- Stk_evp %>% crop(Shp_Frr)
 
 plot(Stk_evp[[1:12]])
@@ -386,5 +385,5 @@ print(France_weather[[4]][[1]])
 France_weather <- France_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
 France_weather$data <- NULL
 
-convert(France_weather, "~/Desktop/Diss-data/France/France_weather.rds")
+saveRDS(France_weather, "~/Desktop/Diss-data/France/France_weather.rds")
 
