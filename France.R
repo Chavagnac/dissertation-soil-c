@@ -376,6 +376,8 @@ France_weather <- France_weather %>%
 France_weather$cell_no <- c(1:306)
 France_weather <- France_weather[, c(1, 2, 4, 3)]
 print(France_weather[[4]][[1]])
+France_weather <- France_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
+France_weather$data <- NULL
 
 
 
