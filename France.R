@@ -1,3 +1,5 @@
+
+
 install.packages("rio")
 install.packages("rgdal")
 install.packages("sp")
@@ -19,11 +21,7 @@ library(tidyverse)
 library(chron)
 library(tibble)
 library(lattice)
-library(rasterVis)
-library(maptools)
 library(lubridate)
-library(tidync)
-library(gpclib)
 library(dplyr)
 
 
@@ -270,7 +268,7 @@ dates <- as.Date(dates, format="%Y-%m-%d")
 Stk_precip <- setZ(Stk_precip, as.Date(dates))
 
 raspt <- rasterToPoints(Stk_precip)
-dt <- tibble(Layer = names(Stk_precip), dttm = as.Date(getZ(Stk_precip)))
+dt <- tibble(Layer = names(Stk_precip), dttm = getZ(Stk_precip))
 raspt2 <- raspt %>%
   as_data_frame() %>%
   rename(lon = x, lat = y) %>%
@@ -281,7 +279,7 @@ colnames(raspt2)
 raspt2 <- raspt2 %>% rename("x" = "lon") 
 raspt2 <- raspt2 %>% rename("y" = "lat")
 
-dates <- raspt2$dttm
+dates <- as.Date(raspt2$dttm)
 str(dates)
 raspt2$month <- month(dates)
 raspt2$year <- year(dates)
@@ -327,13 +325,12 @@ France_weather <- merge(fr_temp2,raspt2,by=c('x', 'y', 'month', 'year'))
 
 # Now for evapotranspiration - THIS IS PAUSED UNTIL I CAN GET SOME ANSWERS REGARDING PET_MM
 # UNTIL THEN NOT DEALING WITH THIS!!!!!
-gettingthere <- tidync::tidync("Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 
 Stk_evp <- brick("Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Stk_evp <- Stk_evp %>% crop(Shp_Frr)
 
 plot(Stk_evp[[1:12]])
-print(Stk_evp[[1]])
+print(Stk_evp[[2]])
 summary(Stk_evp)
 
 dates <- as.array(Stk_evp@z)
@@ -341,7 +338,7 @@ dates <- dates$time[dates$time != "00"]
 
 dates <- as.Date(dates, format="%Y-%m-%d")
 
-evp <- setZ(Stk_evp, as.Date(dates))
+Stk_evp <- setZ(Stk_evp, as.Date(dates))
 
 fr_evp <- rasterToPoints(Stk_evp)
 Stk_evp <- dropLayer(Stk_evp, "band")
@@ -373,11 +370,12 @@ France_weather$pet_mm.y <- NULL
 
 # OK we have merged everything together!!! Now let's make it a nested tibble
 # THIS HAS NOT BEEN PROVED TO WORK SO WE'RE NOT TOUCHING IT UNTIL WE CAN FIGURE OUT AND UPLOAD PET_MM!!!
-France_weather2 <- France_weather
-France_weather$data_full <- list(France_weather$month, France_weather$year, France_weather$temp_centigrade, France_weather$precip_mm, France_weather$pet_mm)
+France_weather <- France_weather %>%
+  group_nest(x, y)
 
-
-
+France_weather$cell_no <- c(1:306)
+France_weather <- France_weather[, c(1, 2, 4, 3)]
+print(France_weather[[4]][[1]])
 
 
 
