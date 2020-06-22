@@ -37,6 +37,10 @@ library(dplyr)
 # Now rice
 
 # Now let's visualise the sand percentage over the country
+Mor_sand <- "~/Desktop/Diss-data/Morocco/Sand/Mor_sand.tif"
+Mor_sand <- raster(Mor_sand)
+plot(Mor_sand)
+plot(Shp_Mor, add=T)
 
 
 # Now FAO stat data for yields in Morocco
@@ -74,6 +78,9 @@ raspt_Mor2$month <- month(dates)
 raspt_Mor2$year <- year(dates)
 raspt_Mor2$dttm <- NULL
 raspt_Mor2 <- raspt_Mor2 %>% rename("precip_mm" = "value")
+
+# convert from cm to mm
+raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*10
 raspt_Mor2$temp_centigrade <- NULL
 
 # Let do that again with temperature

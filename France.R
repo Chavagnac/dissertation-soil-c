@@ -238,6 +238,11 @@ ggplot(data = fra_wheat_df_a) +
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Wheat Harvested \nArea (ha)") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
+# Lets add the sand percentage in the mix now
+Fr_sand <- "~/Desktop/Diss-data/France/Sand/Fr_sand.tif"
+Fr_sand <- raster(Fr_sand)
+plot(Fr_sand)
+plot(Shp_Frr, add=T)
 
 ### OK now for the big guns. We are downloading the FAOstat time series data for 
 # area and yields in france since idk how long but a long long time!! This is the 
@@ -285,6 +290,8 @@ raspt2$month <- month(dates)
 raspt2$year <- year(dates)
 raspt2$dttm <- NULL
 raspt2 <- raspt2 %>% rename("precip_mm" = "value")
+# Convert from cm to mm
+raspt2$precip_mm <- raspt2$precip_mm*10
 raspt2$temp_centigrade <- NULL
 
 # Now for temperature
