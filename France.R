@@ -249,10 +249,10 @@ plot(Shp_Frr, add=T)
 # moment where we freak - there will be another freak when we get to temp and precipitation.
 # Sand however will be easy so that will be the congrats you made it moment.
 
-import("France/France_crop_1961_2018.csv")
-convert("France/France_crop_1961_2018.csv", "France/France_crop_1961_2018.rds")
-import("France/France_crop_1961_2018.rds")
-Dat_faostat_fr <- read_rds("France/France_crop_1961_2018.rds")
+import("~/Desktop/Diss-data/France/France_crop_1961_2018.csv")
+convert("~/Desktop/Diss-data/France/France_crop_1961_2018.csv", "~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
+import("~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
+Dat_faostat_fr <- read_rds("~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
 
 
 ## Well that was much easier than expected... Now onto the next bit - temp and precipitation
@@ -386,5 +386,5 @@ print(France_weather[[4]][[1]])
 France_weather <- France_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
 France_weather$data <- NULL
 
-
+convert(France_weather, "~/Desktop/Diss-data/France/France_weather.rds")
 
