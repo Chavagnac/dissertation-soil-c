@@ -373,7 +373,19 @@ fr_evp2$pet_mm <- fr_evp2$pet_mm*1000
 France_weather <- merge(France_weather,fr_evp2,by=c('x', 'y', 'month', 'year'))
 France_weather$pet_mm.x <- NULL
 France_weather$pet_mm.y <- NULL
-
+France_weather <- France_weather %>% mutate(adjusted_pr = case_when(
+  month == 1~ as.numeric(precip_mm)*31,
+  month == 3~ as.numeric(precip_mm)*31,
+  month ==5~ as.numeric(precip_mm)*31,
+  month ==7~ as.numeric(precip_mm)*31,
+  month ==8~ as.numeric(precip_mm)*31,
+  month ==10~ as.numeric(precip_mm)*31,
+  month ==12 ~ as.numeric(precip_mm)*31,
+  month == 4~ as.numeric(precip_mm)*30,
+  month ==6~ as.numeric(precip_mm)*30,
+  month ==9~ as.numeric(precip_mm)*30,
+  month ==11 ~ as.numeric(precip_mm)*30, 
+  month==2~ as.numeric(precip_mm)*28 ))
 # OK we have merged everything together!!! Now let's make it a nested tibble
 # THIS HAS NOT BEEN PROVED TO WORK SO WE'RE NOT TOUCHING IT UNTIL WE CAN FIGURE OUT AND UPLOAD PET_MM!!!
 France_weather <- France_weather %>%

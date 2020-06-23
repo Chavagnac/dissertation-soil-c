@@ -235,7 +235,7 @@ Dat_faostat_mor <- read_rds("~/Desktop/Diss-data/Morocco/Morocco_crop_1961_2018.
 
 # And now for precipitation data
 
-Stk_precip_Mor <- brick("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_precip_Mor <- brick("~/Desktop/pr_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
 Stk_precip_Mor <- Stk_precip_Mor %>% crop(Shp_Mor)
 plot(Stk_precip_Mor[[1:12]])
@@ -267,8 +267,20 @@ raspt_Mor2$year <- year(dates)
 raspt_Mor2$dttm <- NULL
 raspt_Mor2 <- raspt_Mor2 %>% rename("precip_mm" = "value")
 
-# convert from cm to mm
-raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*10
+# let's get them multiplied by month
+#for (i in raspt_Mor2$precip_mm) {
+# if (raspt_Mor2$month == 1||raspt_Mor2$month ==3||raspt_Mor2$month ==5||raspt_Mor2$month ==7||raspt_Mor2$month ==8||raspt_Mor2$month ==10||raspt_Mor2$month ==12){
+# raspt_Mor2$precip_mm(i) <- i*31 
+#}}
+#for (i in raspt_Mor2$month){ if (raspt_Mor2$month == 4||raspt_Mor2$month ==6||raspt_Mor2$month ==9||raspt_Mor2$month ==11){
+#  raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*30 
+#}}
+#for (i in raspt_Mor2$month){if (raspt_Mor2$month == 2){
+#  raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*28}}
+#  
+
+# convert from mm/day to month
+#raspt_Mor2$precip_mm <- raspt_Mor2$month*31
 raspt_Mor2$temp_centigrade <- NULL
 
 # Let do that again with temperature
@@ -324,7 +336,6 @@ dates <- as.Date(dates, format="%Y-%m-%d")
 Stk_evp_Mor <- setZ(Stk_evp_Mor, as.Date(dates))
 
 evp_Mor <- rasterToPoints(Stk_evp_Mor)
-Stk_evp_Mor <- dropLayer(Stk_evp_Mor, "band")
 dttt_Mor <- data_frame(Layer = names(Stk_evp_Mor), dttm = as.Date(getZ(Stk_evp_Mor)))
 evp_Mor2 <- evp_Mor %>%
   as_data_frame() %>%
@@ -350,7 +361,19 @@ evp_Mor2$pet_mm <- evp_Mor2$pet_mm*1000
 Mor_weather <- merge(Mor_weather,evp_Mor2,by=c('x', 'y', 'month', 'year'))
 Mor_weather$pet_mm.x <- NULL
 Mor_weather$pet_mm.y <- NULL
-
+Mor_weather <- Mor_weather %>% mutate(adjusted_pr = case_when(
+  month == 1~ as.numeric(precip_mm)*31,
+  month == 3~ as.numeric(precip_mm)*31,
+  month ==5~ as.numeric(precip_mm)*31,
+  month ==7~ as.numeric(precip_mm)*31,
+  month ==8~ as.numeric(precip_mm)*31,
+  month ==10~ as.numeric(precip_mm)*31,
+  month ==12 ~ as.numeric(precip_mm)*31,
+  month == 4~ as.numeric(precip_mm)*30,
+  month ==6~ as.numeric(precip_mm)*30,
+  month ==9~ as.numeric(precip_mm)*30,
+  month ==11 ~ as.numeric(precip_mm)*30, 
+  month==2~ as.numeric(precip_mm)*28 ))
 
 # Put them all together
 Mor_weather <- Mor_weather %>%
@@ -361,6 +384,12 @@ Mor_weather <- Mor_weather[, c(1, 2, 4, 3)]
 print(Mor_weather[[4]][[1]])
 Mor_weather <- Mor_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
 Mor_weather$data <- NULL
+
+
+#for (i in Mor_weather$filtered) {
+#  if (Mor_weather %>% month == 1 ||Mor_weather %>% month == 3 ||Mor_weather %>% month ==5||Mor_weather %>% month ==7||Mor_weather %>% month ==8||Mor_weather %>% month ==10||Mor_weather %>% month ==12){
+#    Mor_weather %>% precip_mm <- Mor_weather %>% precip_mm*31
+#  }}
 
 saveRDS(Mor_weather, "~/Desktop/Diss-data/Morocco/Morocco_weather.rds")
 
