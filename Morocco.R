@@ -33,6 +33,8 @@ ggplot(data = mor_wheat_df) +
                fill=NA,color="black", size=1)+
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Wheat Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
@@ -53,6 +55,8 @@ ggplot(data = mor_barley_df) +
                fill=NA,color="black", size=1)+
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Barley Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
@@ -73,6 +77,8 @@ ggplot(data = mor_maiz_df) +
                fill=NA,color="black", size=1)+
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Maize Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 # Now sorghum
@@ -92,6 +98,8 @@ ggplot(data = mor_sorg_df) +
                fill=NA,color="black", size=1)+
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sorghum Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9.4, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
@@ -113,7 +121,77 @@ ggplot(data = mor_rice_df) +
                fill=NA,color="black", size=1)+
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Rice Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+# now sugarbeet
+Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
+shp_Mor <- as.data.frame(Shp_Mor@polygons[[1]]@Polygons[[1]]@coords)
+mbeet <- "~/Desktop/Diss-data/Morocco/Total_Yield_kgha/Sugarbeet/Mor_sugarbeet_yield.tif"
+mor_beet <- raster(mbeet)
+plot(mor_beet)
+plot(Shp_Mor, add=T)
+
+mor_beet_df <- as.data.frame(mor_beet, xy=TRUE)
+mor_beet_df$Mor_sugarbeet_yield <- mor_beet_df$Mor_sugarbeet_yield/1000
+ggplot(data = mor_beet_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_sugarbeet_yield)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarbeet Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+# Now sugarcane
+Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
+shp_Mor <- as.data.frame(Shp_Mor@polygons[[1]]@Polygons[[1]]@coords)
+mcane <- "~/Desktop/Diss-data/Morocco/Total_Yield_kgha/Sugarcane/Mor_sugarcane_yield.tif"
+mor_cane <- raster(mcane)
+plot(mor_cane)
+plot(Shp_Mor, add=T)
+
+mor_cane_df <- as.data.frame(mor_cane, xy=TRUE)
+mor_cane_df$Mor_sugarcane_yield <- mor_cane_df$Mor_sugarcane_yield/1000
+ggplot(data = mor_cane_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_sugarcane_yield)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarcane Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
+# Now potatoes
+Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
+shp_Mor <- as.data.frame(Shp_Mor@polygons[[1]]@Polygons[[1]]@coords)
+mpot <- "~/Desktop/Diss-data/Morocco/Total_Yield_kgha/Potatoes/Mor_pota_yield.tif"
+mor_pot <- raster(mpot)
+plot(mor_pot)
+plot(Shp_Mor, add=T)
+
+mor_pot_df <- as.data.frame(mor_pot, xy=TRUE)
+mor_pot_df$Mor_pota_yield <- mor_pot_df$Mor_pota_yield/1000
+ggplot(data = mor_pot_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_pota_yield)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Potato Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
 
 
 # Now repeat with area where they are harvested 
@@ -216,13 +294,85 @@ ggplot(data = mor_rice_area_df) +
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Rice Harvested \nArea (ha)") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
+# Now Sugarbeet
+mbeet_area <- "~/Desktop/Diss-data/Morocco/Area/Sugarbeet/Mor_sugarbeet.tif"
+mor_beet_area <- raster(mbeet_area)
+plot(mor_beet_area)
+plot(Shp_Mor, add=T)
+
+mor_beet_area_df <- as.data.frame(mor_beet_area, xy=TRUE)
+mor_beet_area_df$Mor_sugarbeet <- mor_beet_area_df$Mor_sugarbeet/1000
+ggplot(data = mor_beet_area_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_sugarbeet)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarbeet Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
+# Now sugarcane
+mcane_area <- "~/Desktop/Diss-data/Morocco/Area/Sugarcane/Mor_sugarcane.tif"
+mor_cane_area <- raster(mcane_area)
+plot(mor_cane_area)
+plot(Shp_Mor, add=T)
+
+mor_cane_area_df <- as.data.frame(mor_cane_area, xy=TRUE)
+ggplot(data = mor_cane_area_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_sugarcane)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarcane Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
+# Now Potatoes
+mpot_area <- "~/Desktop/Diss-data/Morocco/Area/Potatoes/Mor_potato.tif"
+mor_pot_area <- raster(mpot_area)
+plot(mor_cane_area)
+plot(Shp_Mor, add=T)
+
+mor_pot_area_df <- as.data.frame(mor_pot_area, xy=TRUE)
+ggplot(data = mor_pot_area_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_potato)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Potato Harvested \nArea (ha)") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
 
 # Now let's visualise the sand percentage over the country
 Mor_sand <- "~/Desktop/Diss-data/Morocco/Sand/Mor_sand.tif"
 Mor_sand <- raster(Mor_sand)
 plot(Mor_sand)
 plot(Shp_Mor, add=T)
+sand_Mor <- rasterToPoints(Mor_sand)
+sand_Mor2 <- as.data.frame(sand_Mor)
 
+ggplot(data = sand_Mor2) +
+  geom_raster(aes(x = x, y = y, fill = Mor_sand)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Soil Sand \nComposition (%)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
+view(sand_Mor2$x==-9.583333, sand_Mor2$y==29.72223)
+	
 
 # Now FAO stat data for yields in Morocco
 import("~/Desktop/Diss-data/Morocco/Morocco_crop_1961_2018.csv")
@@ -305,6 +455,55 @@ temp_Mor2 <- temp_Mor2 %>% rename("temp_centigrade" = "value")
 
 Mor_weather <- merge(temp_Mor2,raspt_Mor2,by=c('x', 'y', 'month', 'year'))
 
+# Let's try alasdair's method for evapotranspiration
+install.packages("insol")
+library(insol)
+
+lats <- Mor_weather %>%
+  pull(y) %>%
+  unique()
+
+jdays <- tibble(date = seq(from = ymd("2019-01-01"), to = ymd("2019-12-31"), by = as.difftime(days(1)))) %>%
+  mutate(month = month(date),
+         jday = yday(date),
+         mday = days_in_month(date)) %>%
+  group_by(month) %>%
+  summarise(mday = mean(mday),
+            jday = mean(jday))
+
+
+daylength <- tibble(y = rep(lats, 12),
+                    month = rep(1:12, each = length(lats))) %>%
+  left_join(jdays, by = "month") %>%
+  mutate(lon = 0,
+         time_zone = 0,
+         daylength = pmap_dbl(list(y, lon, jday, time_zone), function(a, b, c, d){
+           return(daylength(a, b, c, d)[3])
+         }))
+rtp <- function(x, power){
+  sign(x) * abs(x) ^ (power)
+}
+
+Mor_weather <- Mor_weather %>%
+  mutate(data_reg = map2(y, data_reg, function(lat, df){
+    df %>%
+      mutate(y = lat) %>%
+      group_by(year) %>%
+      mutate(I = sum(rtp(temp_centigrade / 5, 1.514)),
+             alpha = 675*10^-9 * rtp(I, 3) - 771*10^-7 * rtp(I, 2) + 1792*10^-5 * I + 0.49239,
+             pet_mm = rtp(16 * ((10 * temp_centigrade) / I), alpha)) %>%
+      ungroup() %>%
+      left_join(daylength %>% select(y, month, daylength, mday), by = c("y", "month")) %>%
+      mutate(pet_mm = pet_mm * daylength / 12 * mday / 30,
+             pet_mm = ifelse(pet_mm < 1, 1, pet_mm)) %>% # prevents errors with negative PET/div by zero
+      select(-y, -I, -alpha, -mday, -daylength) %>%
+      mutate(precip_mm = ifelse(precip_mm < 0, 0, precip_mm)) # # another quick and dirty fix for potential errors - occasional negative precipitation values
+  }))
+
+
+
+
+
 # Now with evapotranspiration
 
 Stk_evp_Mor <- brick("~/Desktop/Global Weather/Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
@@ -342,7 +541,7 @@ evp_Mor2$precip_mm <- NULL
 evp_Mor2 <- evp_Mor2 %>% rename("pet_mm" = "value")
 
 # I think these values are in meters so let's convert them to mm
-evp_Mor2$pet_mm <- evp_Mor2$pet_mm*1000
+# evp_Mor2$pet_mm <- evp_Mor2$pet_mm*1000
 
 Mor_weather <- merge(Mor_weather,evp_Mor2,by=c('x', 'y', 'month', 'year'))
 Mor_weather$pet_mm.x <- NULL
@@ -361,6 +560,19 @@ Mor_weather <- Mor_weather %>% mutate(adjusted_pr = case_when(
   month ==11 ~ as.numeric(precip_mm)*30, 
   month==2~ as.numeric(precip_mm)*28 ))
 
+Mor_weather <- Mor_weather %>% mutate(adjusted_evp = case_when(
+  month == 1~ as.numeric(pet_mm)*31,
+  month == 3~ as.numeric(pet_mm)*31,
+  month ==5~ as.numeric(pet_mm)*31,
+  month ==7~ as.numeric(pet_mm)*31,
+  month ==8~ as.numeric(pet_mm)*31,
+  month ==10~ as.numeric(pet_mm)*31,
+  month ==12 ~ as.numeric(pet_mm)*31,
+  month == 4~ as.numeric(pet_mm)*30,
+  month ==6~ as.numeric(pet_mm)*30,
+  month ==9~ as.numeric(pet_mm)*30,
+  month ==11 ~ as.numeric(pet_mm)*30, 
+  month==2~ as.numeric(pet_mm)*28 ))
 # Put them all together
 Mor_weather <- Mor_weather %>%
   group_nest(x, y)
