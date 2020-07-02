@@ -235,7 +235,7 @@ Dat_faostat_mor <- read_rds("~/Desktop/Diss-data/Morocco/Morocco_crop_1961_2018.
 
 # And now for precipitation data
 
-Stk_precip_Mor <- brick("~/Desktop/pr_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+Stk_precip_Mor <- brick("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
 Stk_precip_Mor <- Stk_precip_Mor %>% crop(Shp_Mor)
 plot(Stk_precip_Mor[[1:12]])
@@ -267,20 +267,6 @@ raspt_Mor2$year <- year(dates)
 raspt_Mor2$dttm <- NULL
 raspt_Mor2 <- raspt_Mor2 %>% rename("precip_mm" = "value")
 
-# let's get them multiplied by month
-#for (i in raspt_Mor2$precip_mm) {
-# if (raspt_Mor2$month == 1||raspt_Mor2$month ==3||raspt_Mor2$month ==5||raspt_Mor2$month ==7||raspt_Mor2$month ==8||raspt_Mor2$month ==10||raspt_Mor2$month ==12){
-# raspt_Mor2$precip_mm(i) <- i*31 
-#}}
-#for (i in raspt_Mor2$month){ if (raspt_Mor2$month == 4||raspt_Mor2$month ==6||raspt_Mor2$month ==9||raspt_Mor2$month ==11){
-#  raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*30 
-#}}
-#for (i in raspt_Mor2$month){if (raspt_Mor2$month == 2){
-#  raspt_Mor2$precip_mm <- raspt_Mor2$precip_mm*28}}
-#  
-
-# convert from mm/day to month
-#raspt_Mor2$precip_mm <- raspt_Mor2$month*31
 raspt_Mor2$temp_centigrade <- NULL
 
 # Let do that again with temperature
