@@ -635,4 +635,100 @@ Mor_weather$data <- NULL
 
 saveRDS(Mor_weather, "~/Desktop/Diss-data/Morocco/Morocco_weather.rds")
 
+# Now let's make an estimate of crop yields for the next 10 years according to Alasdair's equation
+Mor_FAO <- read.csv("~/Desktop/Morocco_crop_1961_2018.csv")
+saveRDS(Mor_FAO, "~/Desktop/Diss-data/Morocco/Morocco_FAO.rds")
+Dat_faostat_mor <- read_rds("~/Desktop/Diss-data/Morocco/Morocco_FAO.rds")
+sample_n(Dat_faostat_mor, 10, replace = F)
+
+Brk_croparea <- read_rds("~/Desktop/Diss-data/Morocco/morocco-crop-area-ha-2010.rds")
+Brk_cropyield <- read_rds("~/Desktop/Diss-data/Morocco/morocco-crop-yield-tonnes-per-ha-2010.rds")
+
+crop_type <- "wheat" # name of crop of interest
+frac_renew <- 1 / 1 # fraction of crop renewed every year (for e.g. crop renewed every three years, frac_renew = 1 / 3)
+frac_remove <- 0.7 # fraction of crop residues removed
+
+manure_type <- "beef-cattle" # type of animal used to produce manure
+manure_nrate <- 0 # application rate of manure in kg N per hectare
+till_type <- "full" # type of tillage, either full, reduced or zero
+
+sim_start_year <- 1961 # year simulation to start (min = 1961)
+sim_end_year <- 2097 ## year simulation to end (max = 2097)
+
+lat_lon <- tibble(x = -9.583333, y = 29.72223) # default chosen here is a high-yielding arable land near Marrackech
+temp_cropname <- crop_type %>% str_replace_all("-", "\\.") # necessary adjustment as raster doesn't like hyphens
+
+# extract relevant crop raster from crop bricks
+Ras_cropyield <- Brk_cropyield[[which(names(Brk_cropyield) == temp_cropname)]]
+Ras_croparea <- Brk_croparea[[which(names(Brk_croparea) == temp_cropname)]]
+rm(temp_cropname)
+
+# extract from rasters based on points
+yield_tha <- raster::extract(Ras_cropyield, lat_lon)
+area_ha <- raster::extract(Ras_croparea, lat_lon)
+sand_pc <- raster::extract(Ras_sand, lat_lon)
+clim_coord_no <- raster::extract(Ras_clim, lat_lon)
+
+Dat_crop_ts <- Dat_faostat_mor %>% 
+  filter(crop == crop_type,
+         year >= sim_start_year) %>%
+  mutate(yield_rel = (yield_tha / yield_tha[year == 2010]),
+         area_rel = (area_harvested / area_harvested[year == 2010])) %>%
+  dplyr::select(crop, year, yield_rel, area_rel)
+
+# convert to yields for extracted area
+Dat_crop_ts <- Dat_crop_ts %>%
+  mutate(yield_tha = yield_rel * yield_tha,
+         area_ha = area_rel * area_ha)
+
+# plot
+Dat_crop_ts %>%
+  ggplot(aes(x = year, y = yield_tha)) +
+  geom_line()
+
+# 10 year mean and sd for crop yield
+yield_mean <- Dat_crop_ts %>% tail(10) %>% pull(yield_tha) %>% mean()
+yield_sd <- Dat_crop_ts %>% tail(10) %>% pull(yield_tha) %>% sd()
+area_mean <- Dat_crop_ts %>% tail(10) %>% pull(area_ha) %>% mean()
+area_sd <- Dat_crop_ts %>% tail(10) %>% pull(area_ha) %>% sd()
+
+# randomly generated barley yield to 2070 based on 10-year performance
+set.seed(260592)
+Dat_preds <- tibble(year = 2019:sim_end_year,
+                    yield_tha = rnorm(n = length(2019:sim_end_year), mean = yield_mean, sd = yield_sd),
+                    area_ha = rnorm(n = length(2019:sim_end_year), mean = area_mean, sd = area_sd))
+
+# bind simulation with historical data
+Dat_crop_ts <- bind_rows("historical" = Dat_crop_ts,
+                         "simulated" = Dat_preds,
+                         .id = "origin")
+
+# plot to check
+Dat_crop_ts %>%
+  ggplot(aes(x = year, y = yield_tha, colour = origin)) +
+  geom_line()
+
+Dat_crop_ts %>%
+  ggplot(aes(x = year, y = area_ha, colour = origin)) +
+  geom_line()
+
+######################################################################
+# write out crop and manure data files (MODIFY FILE NAMES AS NEEDED) #
+######################################################################
+
+# write out crop data
+Dat_crop_ts %>%
+  mutate(crop_type = crop_type,
+         frac_renew = frac_renew,
+         frac_remove = frac_remove,
+         till_type = till_type,
+         sand_frac = sand_pc / 100) %>%
+  dplyr::select(origin, year, crop_type, yield_tha, frac_renew, frac_remove, sand_frac, till_type) %>%
+  write_csv("~/Desktop/Diss-data/Morocco/morocco-example-crop-data.csv")
+
+# write out manure data
+tibble(year = sim_start_year:sim_end_year,
+       man_type = manure_type,
+       man_nrate = manure_nrate) %>%
+  write_csv("~/Desktop/Diss-data/Morocco/morocco-example-manure-data.csv")
 

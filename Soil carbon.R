@@ -12,3 +12,4 @@ ggplot(data = mor_c_df) +
   scale_alpha(range = c(0.1, 0.65), guide = "none")+
   labs(x="Longitude (degree)", y="Latitude (degree)", fill="Soil Organic Carbon \n(tonne ha-1)") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
