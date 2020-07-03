@@ -192,6 +192,50 @@ ggplot(data = mor_pot_df) +
   geom_vline(xintercept=-9, linetype="dashed")+
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
+# Now soybean
+
+Shp_Mor <- shapefile("~/Desktop/Diss-data/Morocco/Shapefiles/Morocco_shp.shp")
+shp_Mor <- as.data.frame(Shp_Mor@polygons[[1]]@Polygons[[1]]@coords)
+msoy <- "~/Desktop/Diss-data/Morocco/Total_Yield_kgha/Soybean/Mor_soybean_yield.tif"
+mor_soy <- raster(msoy)
+plot(mor_soy)
+plot(Shp_Mor, add=T)
+
+mor_soy_df <- as.data.frame(mor_soy, xy=TRUE)
+mor_soy_df$Mor_soybean_yield <- mor_soy_df$Mor_soybean_yield/1000
+ggplot(data = mor_soy_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_soybean_yield)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Soybean Yield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
+
+
+# Now pearl millet
+
+mmil <- "~/Desktop/Diss-data/Morocco/Total_Yield_kgha/Millet/Mor_millet_yield.tif"
+mor_mil <- raster(mmil)
+plot(mor_mil)
+plot(Shp_Mor, add=T)
+
+mor_mil_df <- as.data.frame(mor_mil, xy=TRUE)
+mor_mil_df$Mor_millet_yield <- mor_mil_df$Mor_millet_yield/1000
+ggplot(data = mor_mil_df) +
+  geom_raster(aes(x = x, y = y, fill = Mor_millet_yield)) +
+  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
+                       na.value="white")+
+  geom_polygon(data=shp_Mor, aes(x= V1, y=V2), 
+               fill=NA,color="black", size=1)+
+  scale_alpha(range = c(0.1, 0.65), guide = "none")+
+  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Pearl Millet \nYield \n(tonne ha-1)") +
+  geom_hline(yintercept=30, linetype="dashed")+
+  geom_vline(xintercept=-9, linetype="dashed")+
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
 # Now repeat with area where they are harvested 

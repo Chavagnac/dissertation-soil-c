@@ -270,6 +270,149 @@ ggplot(av_pred_clim, aes(x=Year)) +
 
 
 
+Dat_clim$data_full[[1]] %>% head(10)
+predicted_clim_raw <- as.data.frame(Dat_clim$data_full)
+
+predicted_clim5 <- data.frame(predicted_clim_raw$month.5, predicted_clim_raw$year.5, predicted_clim_raw$temp_centigrade.5)
+predicted_clim5
+pred_precip5 <- data.frame(predicted_clim_raw$year.5, predicted_clim_raw$precip_mm.5)
+pred_precip5 <- aggregate(pred_precip5$predicted_clim_raw.precip_mm.5, by=list(predicted_clim_raw.year.5 =pred_precip5$predicted_clim_raw.year.5), FUN=sum)
+names(pred_precip5)[names(pred_precip5)=='predicted_clim_raw.year.5'] <- 'Year'
+names(pred_precip5)[names(pred_precip5)=='x'] <- 'Precipitation'
+
+predicted_clim5 <- data.frame(predicted_clim_raw$month.5, predicted_clim_raw$year.5, predicted_clim_raw$temp_centigrade.5)
+predicted_clim5
+
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.month.5'] <- 'month'
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.year.5'] <- 'year'
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.temp_centigrade.5'] <- 'Temperature'
+
+predicted_clim5[which.max(predicted_clim5$Temperature),]
+
+
+av_pred_clim5 <- aggregate(predicted_clim5$Temperature, list(year=predicted_clim5$year), FUN=mean)
+names(av_pred_clim5)[names(av_pred_clim5)=='x'] <- 'Temperature'
+av_pred_clim5 <- data.frame(av_pred_clim5$year, av_pred_clim5$Temperature, pred_precip5$Precipitation)
+names(av_pred_clim5)[names(av_pred_clim5)=='av_pred_clim5.year'] <- 'Year'
+names(av_pred_clim5)[names(av_pred_clim5)=='av_pred_clim5.Temperature'] <- 'Temperature'
+names(av_pred_clim5)[names(av_pred_clim5)=='pred_precip5.Precipitation'] <- 'Precipitation'
+
+
+pred_precip1 <- data.frame(predicted_clim_raw$year.1, predicted_clim_raw$precip_mm.1)
+pred_precip1 <- aggregate(pred_precip1$predicted_clim_raw.precip_mm.1, by=list(predicted_clim_raw.year.1 =pred_precip1$predicted_clim_raw.year.1), FUN=sum)
+names(pred_precip1)[names(pred_precip1)=='predicted_clim_raw.year.1'] <- 'Year'
+names(pred_precip1)[names(pred_precip1)=='x'] <- 'Precipitation'
+
+predicted_clim1 <- data.frame(predicted_clim_raw$month.1, predicted_clim_raw$year.1, predicted_clim_raw$temp_centigrade.1)
+predicted_clim1
+
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.month.1'] <- 'month'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.year.1'] <- 'year'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.temp_centigrade.1'] <- 'Temperature'
+
+
+av_pred_clim1 <- aggregate(predicted_clim1$Temperature, list(year=predicted_clim1$year), FUN=mean)
+names(av_pred_clim1)[names(av_pred_clim1)=='x'] <- 'Temperature'
+av_pred_clim1 <- data.frame(av_pred_clim1$year, av_pred_clim1$Temperature, pred_precip1$Precipitation)
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.year'] <- 'Year'
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.Temperature'] <- 'Temperature'
+names(av_pred_clim1)[names(av_pred_clim1)=='pred_precip1.Precipitation'] <- 'Precipitation'
+
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.month.1'] <- 'month'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.year.1'] <- 'year'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.temp_centigrade.1'] <- 'Temperature'
+
+predicted_clim1[which.max(predicted_clim1$Temperature),]
+
+predicted_clim2 <- data.frame(predicted_clim_raw$month.2, predicted_clim_raw$year.2, predicted_clim_raw$temp_centigrade.2)
+predicted_clim2
+pred_precip2 <- data.frame(predicted_clim_raw$year.2, predicted_clim_raw$precip_mm.2)
+pred_precip2 <- aggregate(pred_precip2$predicted_clim_raw.precip_mm.2, by=list(predicted_clim_raw.year.2 =pred_precip2$predicted_clim_raw.year.2), FUN=sum)
+names(pred_precip2)[names(pred_precip2)=='predicted_clim_raw.year.2'] <- 'Year'
+names(pred_precip2)[names(pred_precip2)=='x'] <- 'Precipitation'
+
+
+
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.month.2'] <- 'month'
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.year.2'] <- 'year'
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.temp_centigrade.2'] <- 'Temperature'
+
+predicted_clim2[which.max(predicted_clim2$Temperature),]
+
+predicted_clim3 <- data.frame(predicted_clim_raw$month.3, predicted_clim_raw$year.3, predicted_clim_raw$temp_centigrade.3)
+predicted_clim3
+pred_precip3 <- data.frame(predicted_clim_raw$year.3, predicted_clim_raw$precip_mm.3)
+pred_precip3 <- aggregate(pred_precip3$predicted_clim_raw.precip_mm.3, by=list(predicted_clim_raw.year.3 =pred_precip3$predicted_clim_raw.year.3), FUN=sum)
+names(pred_precip3)[names(pred_precip3)=='predicted_clim_raw.year.3'] <- 'Year'
+names(pred_precip3)[names(pred_precip3)=='x'] <- 'Precipitation'
+
+
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.month.3'] <- 'month'
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.year.3'] <- 'year'
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.temp_centigrade.3'] <- 'Temperature'
+
+predicted_clim3[which.max(predicted_clim3$Temperature),]
+
+predicted_clim4 <- data.frame(predicted_clim_raw$month.4, predicted_clim_raw$year.4, predicted_clim_raw$temp_centigrade.4)
+predicted_clim4
+pred_precip4 <- data.frame(predicted_clim_raw$year.4, predicted_clim_raw$precip_mm.4)
+pred_precip4 <- aggregate(pred_precip4$predicted_clim_raw.precip_mm.4, by=list(predicted_clim_raw.year.4 =pred_precip4$predicted_clim_raw.year.4), FUN=sum)
+names(pred_precip4)[names(pred_precip4)=='predicted_clim_raw.year.4'] <- 'Year'
+names(pred_precip4)[names(pred_precip4)=='x'] <- 'Precipitation'
+
+
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.month.4'] <- 'month'
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.year.4'] <- 'year'
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.temp_centigrade.4'] <- 'Temperature'
+
+predicted_clim4[which.max(predicted_clim4$Temperature),]
+
+av_pred_clim1 <- aggregate(predicted_clim1$Temperature, list(year=predicted_clim1$year), FUN=mean)
+names(av_pred_clim1)[names(av_pred_clim1)=='x'] <- 'Temperature'
+av_pred_clim1 <- data.frame(av_pred_clim1$year, av_pred_clim1$Temperature, pred_precip1$Precipitation)
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.year'] <- 'Year'
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.Temperature'] <- 'Temperature'
+names(av_pred_clim1)[names(av_pred_clim1)=='pred_precip1.Precipitation'] <- 'Precipitation'
+
+
+av_pred_clim2 <- aggregate(predicted_clim2$Temperature, list(year=predicted_clim2$year), FUN=mean)
+names(av_pred_clim2)[names(av_pred_clim2)=='x'] <- 'Temperature'
+av_pred_clim2 <- data.frame(av_pred_clim2$year, av_pred_clim2$Temperature, pred_precip2$Precipitation)
+names(av_pred_clim2)[names(av_pred_clim2)=='av_pred_clim2.year'] <- 'Year'
+names(av_pred_clim2)[names(av_pred_clim2)=='av_pred_clim2.Temperature'] <- 'Temperature'
+names(av_pred_clim2)[names(av_pred_clim2)=='pred_precip2.Precipitation'] <- 'Precipitation'
+
+
+av_pred_clim3 <- aggregate(predicted_clim3$Temperature, list(year=predicted_clim3$year), FUN=mean)
+names(av_pred_clim3)[names(av_pred_clim3)=='x'] <- 'Temperature'
+av_pred_clim3 <- data.frame(av_pred_clim3$year, av_pred_clim3$Temperature, pred_precip3$Precipitation)
+names(av_pred_clim3)[names(av_pred_clim3)=='av_pred_clim3.year'] <- 'Year'
+names(av_pred_clim3)[names(av_pred_clim3)=='av_pred_clim3.Temperature'] <- 'Temperature'
+names(av_pred_clim3)[names(av_pred_clim3)=='pred_precip3.Precipitation'] <- 'Precipitation'
+
+av_pred_clim4 <- aggregate(predicted_clim4$Temperature, list(year=predicted_clim4$year), FUN=mean)
+names(av_pred_clim4)[names(av_pred_clim4)=='x'] <- 'Temperature'
+av_pred_clim4 <- data.frame(av_pred_clim4$year, av_pred_clim4$Temperature, pred_precip4$Precipitation)
+names(av_pred_clim4)[names(av_pred_clim4)=='av_pred_clim4.year'] <- 'Year'
+names(av_pred_clim4)[names(av_pred_clim4)=='av_pred_clim4.Temperature'] <- 'Temperature'
+names(av_pred_clim4)[names(av_pred_clim4)=='pred_precip4.Precipitation'] <- 'Precipitation'
+
+p <- ggplot() +
+  geom_line(data=av_pred_clim5, mapping= aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim5, mapping=aes(x=Year, y=Precipitation/8), color='blue') +
+  geom_line(data=av_pred_clim1, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim1, mapping=aes(x=Year,y=Precipitation/8), color='blue')+
+  geom_line(data=av_pred_clim2, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim2, mapping=aes(x=Year,y=Precipitation/8), color='blue')+ 
+  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Precipitation/8), color='blue')+  
+  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Precipitation/8), color='blue') + 
+  scale_y_continuous(name = "Annual Average Temperature (Celcius)",
+                     sec.axis = sec_axis(~.*8, name="Annual Total Precipitation (mm)"))+
+  labs(colour = c("Annual Average Temperature (Celcius)", "Annual Total Precipitation (mm)"))    
+p
+
 
 
 
