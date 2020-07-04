@@ -164,15 +164,15 @@ Ras_help <- Dat_clim %>%
 # write out
 write_rds(Ras_help, "~/Desktop/Global Weather/Model 1/morocco-climate-data-helper-raster.rds")
 
-Dat_clim <- read_rds("~/Desktop/Global Weather/Model 1/morocco-full-climate-data-1902-2097.rds")
-Ras_clim <- read_rds("~/Desktop/Global Weather/Model 1/morocco-climate-data-helper-raster.rds")
+Dat_clim <- read_rds("~/Desktop/Global Weather/Model 1/FINAL-Mor-full-climate-data-1902-2097.rds")
+#Ras_clim <- read_rds("~/Desktop/Global Weather/Model 1/morocco-climate-data-helper-raster.rds")
 sample_n(Dat_clim, 10, replace = F)
 Dat_clim$data_full[[1]] %>% head(10)
 
 plot(Ras_clim)
 plot(Shp_Mor, add = T)
 
-lat_lon <- tibble(x = -9.5, y = 30)
+lat_lon <- tibble(x = -9.583333, y = 30.27779)
 clim_coord_no <- raster::extract(Ras_clim, lat_lon)
 clim_coord <- as.data.frame(clim_coord_no)
 
@@ -399,17 +399,17 @@ names(av_pred_clim4)[names(av_pred_clim4)=='pred_precip4.Precipitation'] <- 'Pre
 
 p <- ggplot() +
   geom_line(data=av_pred_clim5, mapping= aes(x=Year, y=Temperature), color='red') + 
-  geom_line(data=av_pred_clim5, mapping=aes(x=Year, y=Precipitation/8), color='blue') +
+  geom_line(data=av_pred_clim5, mapping=aes(x=Year, y=Precipitation/20), color='blue') +
   geom_line(data=av_pred_clim1, mapping=aes(x=Year, y=Temperature), color='red') + 
-  geom_line(data=av_pred_clim1, mapping=aes(x=Year,y=Precipitation/8), color='blue')+
+  geom_line(data=av_pred_clim1, mapping=aes(x=Year,y=Precipitation/20), color='blue')+
   geom_line(data=av_pred_clim2, mapping=aes(x=Year, y=Temperature), color='red') + 
-  geom_line(data=av_pred_clim2, mapping=aes(x=Year,y=Precipitation/8), color='blue')+ 
+  geom_line(data=av_pred_clim2, mapping=aes(x=Year,y=Precipitation/20), color='blue')+ 
   geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Temperature), color='red') + 
-  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Precipitation/8), color='blue')+  
+  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Precipitation/20), color='blue')+  
   geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Temperature), color='red') + 
-  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Precipitation/8), color='blue') + 
+  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Precipitation/20), color='blue') + 
   scale_y_continuous(name = "Annual Average Temperature (Celcius)",
-                     sec.axis = sec_axis(~.*8, name="Annual Total Precipitation (mm)"))+
+                     sec.axis = sec_axis(~.*20, name="Annual Total Precipitation (mm)"))+
   labs(colour = c("Annual Average Temperature (Celcius)", "Annual Total Precipitation (mm)"))    
 p
 
