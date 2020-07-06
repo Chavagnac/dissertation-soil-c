@@ -1087,6 +1087,12 @@ Dat_crop_ts %>%
   dplyr::select(origin, year, crop_type, yield_tha, frac_renew, frac_remove, sand_frac, till_type) %>%
   write_csv("~/Desktop/Diss-data/Morocco/morocco-pulse-crop-data.csv")
 
+tibble(year = sim_start_year:sim_end_year,
+       man_type = manure_type,
+       man_nrate = manure_nrate) %>%
+  write_csv("~/Desktop/Diss-data/Morocco/Manure/morocco-sheep-manure-data.csv")
+
+
 ## Now millet
 
 Dat_faostat_mor <- read_rds("~/Desktop/Diss-data/Morocco/Morocco_FAO.rds")
@@ -1209,10 +1215,15 @@ plot(Mor_barley_yield)
 plot(Mor_wheat_yield)
 
 plot_maize_y <- read_csv("~/Desktop/Diss-data/Morocco/morocco-maize-crop-data.csv")
+plot_maize_y$yield_tha <- plot_maize_y$yield_tha/1000
 plot_barley_y <- read_csv("~/Desktop/Diss-data/Morocco/morocco-barley-crop-data.csv")
+plot_barley_y$yield_tha<- plot_barley_y$yield_tha/1000
 plot_wheat_y <- read_csv("~/Desktop/Diss-data/Morocco/morocco-wheat-crop-data.csv")
+plot_wheat_y$yield_tha<-plot_wheat_y$yield_tha/1000
 plot_pot_y <- read_csv("~/Desktop/Diss-data/Morocco/morocco-potato-crop-data.csv")
+plot_pot_y$yield_tha<-plot_pot_y$yield_tha/1000
 plot_mill_y <- read_csv("~/Desktop/Diss-data/Morocco/morocco-millet-crop-data.csv")
+plot_mill_y$yield_tha<-plot_mill_y$yield_tha/1000
 
 color <- c("Maize"="black", "Barley"="blue","Wheat"="red", "Potato"="green", "Millet"='orange')
 
@@ -1221,7 +1232,7 @@ yield_estimate <- ggplot()+
   geom_line(data=plot_maize_y, mapping= aes(x=year, y=yield_tha, color='Maize'))+
   geom_line(data=plot_barley_y, mapping= aes(x=year, y=yield_tha, color='Barley'))+
   geom_line(data=plot_wheat_y, mapping= aes(x=year, y=yield_tha, color='Wheat'))+
-  geom_line(data=plot_pot_y, mapping= aes(x=year, y=yield_tha, color='Potato'))+
+  #geom_line(data=plot_pot_y, mapping= aes(x=year, y=yield_tha, color='Potato'))+
   labs(x="Year", y="Yield (t ha-1)", color = "Crops") +
   scale_color_manual(values = color)+
   theme(panel.background = element_rect(fill = "white", colour = "white"))+
@@ -1229,6 +1240,39 @@ yield_estimate <- ggplot()+
 
 yield_estimate
 
-geom_line(data=plot_pot_y, mapping= aes(x=year, y=yield_tha, color='Potato'))+
+#geom_line(data=plot_pot_y, mapping= aes(x=year, y=yield_tha, color='Potato'))
+
+#### NOW WE DO MANURE COMPARISONS
+  
+manure <- read_csv("~/Desktop/Diss-data/Morocco/Manure/compare-manure.csv")
+
+ggplot()+
+  geom_line(data=manure, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
+
+# now crops
+
+Crops <- read_csv("~/Desktop/Diss-data/Morocco/Crops/compare-crop.csv")
+
+ggplot()+
+  geom_line(data=Crops, aes(x=Year, y=Total.Carbon, colour=Crop))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Crop") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
+
+Till <- read_csv("~/Desktop/Diss-data/Morocco/Crops/compare-till.csv")
+
+ggplot()+
+  geom_line(data=Till, aes(x=Year, y=Total.Carbon, colour=PercentageResidueRemoved))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", colour="Percentage \nResidue \nRemoved \nFrom Field") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
+
+View(Dat_clim[[4]][[1]])
 
 

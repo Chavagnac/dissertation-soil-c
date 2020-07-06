@@ -3,7 +3,7 @@ library(tidyverse)
 library(ncdf4)
 library(lubridate)
 
-gisdata_repo <- "GIS data repository"
+#gisdata_repo <- "GIS data repository"
 
 # check out ncdf data and read in as raster bricks
 nc_open("~/Desktop/Global Weather/Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
@@ -90,8 +90,8 @@ Dat_clim <- Dat_clim %>%
 # https://upcommons.upc.edu/bitstream/handle/2117/89152/Appendix_10.pdf?sequence=3&isAllowed=y
 
 # daylength calculations using insol
-install.packages("insol")
-install.packages("forecast")
+#install.packages("insol")
+#install.packages("forecast")
 library(insol)
 library(forecast)
 
