@@ -796,10 +796,8 @@ plot_pot_y <- read_csv("~/Desktop/Diss-data/Sweden/sweden-potato-crop-data.csv")
 plot_pot_y$yield_tha<-plot_pot_y$yield_tha/1000
 
 
-color <- c("Maize"="black", "Barley"="blue","Wheat"="red", "Potato"="green", "Millet"='orange')
-
 yield_estimate <- ggplot()+
-  geom_line(data=plot_rape_y, mapping= aes(x=year, y=yield_tha, color='Millet'))+
+  geom_line(data=plot_rape_y, mapping= aes(x=year, y=yield_tha, color='Rapeseed'))+
   geom_line(data=plot_barley_y, mapping= aes(x=year, y=yield_tha, color='Barley'))+
   geom_line(data=plot_wheat_y, mapping= aes(x=year, y=yield_tha, color='Wheat'))+
   geom_line(data=plot_pot_y, mapping= aes(x=year, y=yield_tha, color='Potato'))+
