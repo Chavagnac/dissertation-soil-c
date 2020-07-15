@@ -1292,11 +1292,28 @@ av_pred_clim4[which.max(av_pred_clim4$Temperature),]
 av_pred_clim5[which.max(av_pred_clim5$Temperature),]
 
 
+###############
+# NOW WE LOOK AT COMPARISONS AND TRY TO SEE WHATS UP
+#############ß
 
 
+manure <- read_csv("~/Desktop/Diss-data/Sweden/Manure/compare-manure.csv")
+
+ggplot()+
+  geom_line(data=manure, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
 
 
-
+x.sub2 <- subset(manure, Year >2094)
+ggplot()+
+  geom_line(data=x.sub2, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
 
 
 
