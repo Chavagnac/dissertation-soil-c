@@ -398,6 +398,7 @@ sw_fao <- read.csv("~/Desktop/Sweden_fao.csv")
 saveRDS(sw_fao, "~/Desktop/Diss-data/Sweden/sweden_FAO.rds")
 Dat_faostat_sw <- read_rds("~/Desktop/Diss-data/Sweden/sweden_FAO.rds")
 sample_n(Dat_faostat_sw, 10, replace = F)
+Ras_clim <- read_rds("~/Desktop/Global Weather/Model 1/Sweden-climate-data-helper-raster.rds")
 
 Brk_croparea <- read_rds("~/Desktop/Diss-data/Sweden/sweden-crop-area-ha-2010.rds")
 Brk_cropyield <- read_rds("~/Desktop/Diss-data/Sweden/sweden-crop-yield-tonnes-per-ha-2010.rds")
@@ -855,16 +856,16 @@ library(tidyverse)
 library(ncdf4)
 library(lubridate)
 
-# check out ncdf data and read in as raster bricks
-nc_open("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 nc_open("~/Desktop/Global Weather/Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
+nc_open("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 
 Stk_temp <- brick("~/Desktop/Global Weather/Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 Stk_precip <- brick("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
 
 # read in shapefile and mask brick
-Stk_temp <- Stk_temp %>% crop(Shp_sw)
-Stk_precip <- Stk_precip %>% crop(Shp_sw)
+Shp_Fr <- shapefile("~/Desktop/Diss-data/Sweden/Sweden.shp")
+Stk_temp <- Stk_temp %>% crop(Shp_Fr)
+Stk_precip <- Stk_precip %>% crop(Shp_Fr)
 
 plot(Stk_temp[[1:12]])
 plot(Stk_precip[[1:12]])
@@ -939,7 +940,11 @@ Dat_clim <- Dat_clim %>%
 # https://upcommons.upc.edu/bitstream/handle/2117/89152/Appendix_10.pdf?sequence=3&isAllowed=y
 
 # daylength calculations using insol
+#install.packages("insol")
+#install.packages("forecast")
 library(insol)
+library(forecast)
+
 
 lats <- Dat_clim %>%
   pull(y) %>%
@@ -998,415 +1003,308 @@ Dat_clim <- Dat_clim %>%
            }))
 
 # write out full climate data
-write_rds(Dat_clim, "~/Desktop/Global Weather/Model 1/FINAL-sweden-full-climate-data-1902-2097.rds")
+write_rds(Dat_clim, "~/Desktop/Global Weather/Model 1/France-full-climate-data-1902-2097.rds")
+
+# how about a helper raster to allow spatial point querying of data?
+# number lat/lon values and transform to raster, keep numbers in climate df
+Ras_help <- Dat_clim %>%
+  select(x, y, z = cell_no) %>%
+  rasterFromXYZ()
+
+# write out
+write_rds(Ras_help, "~/Desktop/Global Weather/Model 1/Sweden-climate-data-helper-raster.rds")
+
+Dat_clim <- read_rds("~/Desktop/Global Weather/Model 1/FINAL-sweden-full-climate-data-1902-2097.rds")
+Ras_clim <- read_rds("~/Desktop/Global Weather/Model 1/Sweden-climate-data-helper-raster.rds")
+sample_n(Dat_clim, 10, replace = F)
+Dat_clim$data_full[[1]] %>% head(10)
+
+plot(Ras_clim)
+plot(Shp_Fr, add = T)
+
+
+
+
+########### THIS IS WHERE YOU FIGURE OUT LOCATION!##############
+
+
+lat_lon <- tibble(x = 17.5, y = 60)
+clim_coord_no <- raster::extract(Ras_clim, lat_lon)
+clim_coord <- as.data.frame(clim_coord_no)
+
+sim_start_year <- 1961 # year simulation to start (min = 1961)
+sim_end_year <- 2097 ## year simulation to end (max = 2097)
+mean_sim_end <- 0
+
+# climate uncertainty (fractional std. dev. default i.e. no uncertainty = 0)
+sd_sim_end <- 0.3
+
+# number of Monte Carlo repetitions
+# (more than 100 at your own risk — depending on your processor it may be too much for it to handle)
+MC_n <- 100
+
+Dat_clim <- Dat_clim %>%
+  filter(cell_no == clim_coord_no) %>%
+  dplyr::select(-cell_no) %>%
+  slice(rep(1, MC_n)) %>%
+  add_column(sample = 1:MC_n, .before = "data_full") %>%
+  mutate(data_full = pmap(list(mean_sim_end, sd_sim_end, sim_start_year, sim_end_year, data_full), function(mean, sd, start, end, df){
+    
+    df <- df %>% filter(year >= start,
+                        year <= end)
+    
+    det <- df %>% filter(year < 2020) %>% nrow()
+    stoch <- df %>% filter(year >= 2020) %>% nrow()
+    
+    mean_seq <- seq(from = 0, to = mean, length.out = stoch)
+    sd_seq <- seq(from = 0, to = sd, length.out = stoch)
+    
+    # stationary autoregressive process
+    x <- w <- rnorm(n = stoch, mean = mean_seq, sd = sd_seq)
+    for(t in 2:stoch) x[t] <- (x[t - 1] / 2) + w[t]
+    x1 <- c(rep(0, det), x)
+    
+    x <- w <- rnorm(n = stoch, mean = mean_seq, sd = sd_seq)
+    for(t in 2:stoch) x[t] <- (x[t - 1] / 2) + w[t]
+    x2 <- c(rep(0, det), x)
+    
+    x <- w <- rnorm(n = stoch, mean = mean_seq, sd = sd_seq)
+    for(t in 2:stoch) x[t] <- (x[t - 1] / 2) + w[t]
+    x3 <- c(rep(0, det), x)
+    
+    df %>%
+      mutate(temp_centigrade = temp_centigrade * (1 + x1),
+             precip_mm = precip_mm * (1 + x2),
+             pet_mm = pet_mm * (1 + x3),
+             temp_centigrade = ifelse(temp_centigrade < 0, 0, temp_centigrade),
+             precip_mm = ifelse(precip_mm < 0, 0, precip_mm),
+             pet_mm = ifelse(pet_mm < 0, 0, pet_mm)) %>%
+      return()
+  }))
+
+# write out climate data  
+write_rds(Dat_clim, "~/Desktop/Global Weather/Model 1/Sweden-example-climate-data.rds")
+
+# Now lets take a look at temperature
+Dat_clim$data_full[[1]] %>% head(100)
+predicted_clim_raw <- as.data.frame(Dat_clim$data_full)
+pred_precip <- data.frame(predicted_clim_raw$year, predicted_clim_raw$month, predicted_clim_raw$precip_mm)
+pred_precip <- aggregate(pred_precip$predicted_clim_raw.precip_mm, by=list(predicted_clim_raw.year =pred_precip$predicted_clim_raw.year), FUN=mean)
+names(pred_precip)[names(pred_precip)=='predicted_clim_raw.year'] <- 'Year'
+names(pred_precip)[names(pred_precip)=='x'] <- 'Precipitation'
+# names(predicted_precip)[names(predicted_precip)=='predicted_clim_raw.month'] <- 'month'
+predicted_temp <- data.frame(predicted_clim_raw$month, predicted_clim_raw$year, predicted_clim_raw$temp_centigrade)
+predicted_temp <- aggregate(predicted_temp$predicted_clim_raw.temp_centigrade, by=list(predicted_clim_raw.year =predicted_temp$predicted_clim_raw.year), FUN=mean)
+predicted_temp
+
+# names(predicted_temp)[names(predicted_temp)=='predicted_clim_raw.month'] <- 'month'
+names(predicted_temp)[names(predicted_temp)=='predicted_clim_raw.year'] <- 'year'
+names(predicted_temp)[names(predicted_temp)=='x'] <- 'Temperature'
+# names(predicted_temp)[names(predicted_temp)=='predicted_clim_raw.precip_mm'] <- 'Precipitation'
+
+predicted_temp[which.max(predicted_temp$Temperature),]
+
+av_pred_clim <- data.frame(predicted_temp$year, predicted_temp$Temperature, pred_precip$Precipitation)
+names(av_pred_clim)[names(av_pred_clim)=='predicted_temp.year'] <- 'Year'
+names(av_pred_clim)[names(av_pred_clim)=='predicted_temp.Temperature'] <- 'Temperature'
+names(av_pred_clim)[names(av_pred_clim)=='pred_precip.Precipitation'] <- 'Precipitation'
 
+ggplot(av_pred_clim, aes(x=Year)) +
+  
+  geom_line( aes(y=Temperature), color='red') + 
+  geom_line( aes(y=Precipitation/3), color='blue') + 
+  scale_y_continuous(name = "Temperature",
+                     sec.axis = sec_axis(~.*3, name="Precipitation"))+
+  labs(colour = c("Temperature", "Precipitation"))
 
 
+# ggplot()+
+#  geom_line(data=predicted_temp, 
+#            aes(x = year, y= Temperature, colour='red'))+
+#  geom_line(data=pred_precip, 
+#            aes(x = Year, y= Precipitation), color='blue')
 
 
 
+Dat_clim$data_full[[1]] %>% head(10)
+predicted_clim_raw <- as.data.frame(Dat_clim$data_full)
 
+predicted_clim5 <- data.frame(predicted_clim_raw$month.5, predicted_clim_raw$year.5, predicted_clim_raw$temp_centigrade.5)
+predicted_clim5
+pred_precip5 <- data.frame(predicted_clim_raw$year.5, predicted_clim_raw$precip_mm.5)
+pred_precip5 <- aggregate(pred_precip5$predicted_clim_raw.precip_mm.5, by=list(predicted_clim_raw.year.5 =pred_precip5$predicted_clim_raw.year.5), FUN=sum)
+names(pred_precip5)[names(pred_precip5)=='predicted_clim_raw.year.5'] <- 'Year'
+names(pred_precip5)[names(pred_precip5)=='x'] <- 'Precipitation'
 
+predicted_clim5 <- data.frame(predicted_clim_raw$month.5, predicted_clim_raw$year.5, predicted_clim_raw$temp_centigrade.5)
+predicted_clim5
 
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.month.5'] <- 'month'
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.year.5'] <- 'year'
+names(predicted_clim5)[names(predicted_clim5)=='predicted_clim_raw.temp_centigrade.5'] <- 'Temperature'
 
+predicted_clim5[which.max(predicted_clim5$Temperature),]
 
 
+av_pred_clim5 <- aggregate(predicted_clim5$Temperature, list(year=predicted_clim5$year), FUN=mean)
+names(av_pred_clim5)[names(av_pred_clim5)=='x'] <- 'Temperature'
+av_pred_clim5 <- data.frame(av_pred_clim5$year, av_pred_clim5$Temperature, pred_precip5$Precipitation)
+names(av_pred_clim5)[names(av_pred_clim5)=='av_pred_clim5.year'] <- 'Year'
+names(av_pred_clim5)[names(av_pred_clim5)=='av_pred_clim5.Temperature'] <- 'Temperature'
+names(av_pred_clim5)[names(av_pred_clim5)=='pred_precip5.Precipitation'] <- 'Precipitation'
 
 
+pred_precip1 <- data.frame(predicted_clim_raw$year.1, predicted_clim_raw$precip_mm.1)
+pred_precip1 <- aggregate(pred_precip1$predicted_clim_raw.precip_mm.1, by=list(predicted_clim_raw.year.1 =pred_precip1$predicted_clim_raw.year.1), FUN=sum)
+names(pred_precip1)[names(pred_precip1)=='predicted_clim_raw.year.1'] <- 'Year'
+names(pred_precip1)[names(pred_precip1)=='x'] <- 'Precipitation'
 
+predicted_clim1 <- data.frame(predicted_clim_raw$month.1, predicted_clim_raw$year.1, predicted_clim_raw$temp_centigrade.1)
+predicted_clim1
 
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.month.1'] <- 'month'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.year.1'] <- 'year'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.temp_centigrade.1'] <- 'Temperature'
 
 
+av_pred_clim1 <- aggregate(predicted_clim1$Temperature, list(year=predicted_clim1$year), FUN=mean)
+names(av_pred_clim1)[names(av_pred_clim1)=='x'] <- 'Temperature'
+av_pred_clim1 <- data.frame(av_pred_clim1$year, av_pred_clim1$Temperature, pred_precip1$Precipitation)
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.year'] <- 'Year'
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.Temperature'] <- 'Temperature'
+names(av_pred_clim1)[names(av_pred_clim1)=='pred_precip1.Precipitation'] <- 'Precipitation'
 
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.month.1'] <- 'month'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.year.1'] <- 'year'
+names(predicted_clim1)[names(predicted_clim1)=='predicted_clim_raw.temp_centigrade.1'] <- 'Temperature'
+
+predicted_clim1[which.max(predicted_clim1$Temperature),]
 
+predicted_clim2 <- data.frame(predicted_clim_raw$month.2, predicted_clim_raw$year.2, predicted_clim_raw$temp_centigrade.2)
+predicted_clim2
+pred_precip2 <- data.frame(predicted_clim_raw$year.2, predicted_clim_raw$precip_mm.2)
+pred_precip2 <- aggregate(pred_precip2$predicted_clim_raw.precip_mm.2, by=list(predicted_clim_raw.year.2 =pred_precip2$predicted_clim_raw.year.2), FUN=sum)
+names(pred_precip2)[names(pred_precip2)=='predicted_clim_raw.year.2'] <- 'Year'
+names(pred_precip2)[names(pred_precip2)=='x'] <- 'Precipitation'
+
+
+
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.month.2'] <- 'month'
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.year.2'] <- 'year'
+names(predicted_clim2)[names(predicted_clim2)=='predicted_clim_raw.temp_centigrade.2'] <- 'Temperature'
+
+predicted_clim2[which.max(predicted_clim2$Temperature),]
 
+predicted_clim3 <- data.frame(predicted_clim_raw$month.3, predicted_clim_raw$year.3, predicted_clim_raw$temp_centigrade.3)
+predicted_clim3
+pred_precip3 <- data.frame(predicted_clim_raw$year.3, predicted_clim_raw$precip_mm.3)
+pred_precip3 <- aggregate(pred_precip3$predicted_clim_raw.precip_mm.3, by=list(predicted_clim_raw.year.3 =pred_precip3$predicted_clim_raw.year.3), FUN=sum)
+names(pred_precip3)[names(pred_precip3)=='predicted_clim_raw.year.3'] <- 'Year'
+names(pred_precip3)[names(pred_precip3)=='x'] <- 'Precipitation'
 
 
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.month.3'] <- 'month'
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.year.3'] <- 'year'
+names(predicted_clim3)[names(predicted_clim3)=='predicted_clim_raw.temp_centigrade.3'] <- 'Temperature'
 
+predicted_clim3[which.max(predicted_clim3$Temperature),]
 
+predicted_clim4 <- data.frame(predicted_clim_raw$month.4, predicted_clim_raw$year.4, predicted_clim_raw$temp_centigrade.4)
+predicted_clim4
+pred_precip4 <- data.frame(predicted_clim_raw$year.4, predicted_clim_raw$precip_mm.4)
+pred_precip4 <- aggregate(pred_precip4$predicted_clim_raw.precip_mm.4, by=list(predicted_clim_raw.year.4 =pred_precip4$predicted_clim_raw.year.4), FUN=sum)
+names(pred_precip4)[names(pred_precip4)=='predicted_clim_raw.year.4'] <- 'Year'
+names(pred_precip4)[names(pred_precip4)=='x'] <- 'Precipitation'
 
 
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.month.4'] <- 'month'
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.year.4'] <- 'year'
+names(predicted_clim4)[names(predicted_clim4)=='predicted_clim_raw.temp_centigrade.4'] <- 'Temperature'
 
+predicted_clim4[which.max(predicted_clim4$Temperature),]
 
+av_pred_clim1 <- aggregate(predicted_clim1$Temperature, list(year=predicted_clim1$year), FUN=mean)
+names(av_pred_clim1)[names(av_pred_clim1)=='x'] <- 'Temperature'
+av_pred_clim1 <- data.frame(av_pred_clim1$year, av_pred_clim1$Temperature, pred_precip1$Precipitation)
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.year'] <- 'Year'
+names(av_pred_clim1)[names(av_pred_clim1)=='av_pred_clim1.Temperature'] <- 'Temperature'
+names(av_pred_clim1)[names(av_pred_clim1)=='pred_precip1.Precipitation'] <- 'Precipitation'
 
 
+av_pred_clim2 <- aggregate(predicted_clim2$Temperature, list(year=predicted_clim2$year), FUN=mean)
+names(av_pred_clim2)[names(av_pred_clim2)=='x'] <- 'Temperature'
+av_pred_clim2 <- data.frame(av_pred_clim2$year, av_pred_clim2$Temperature, pred_precip2$Precipitation)
+names(av_pred_clim2)[names(av_pred_clim2)=='av_pred_clim2.year'] <- 'Year'
+names(av_pred_clim2)[names(av_pred_clim2)=='av_pred_clim2.Temperature'] <- 'Temperature'
+names(av_pred_clim2)[names(av_pred_clim2)=='pred_precip2.Precipitation'] <- 'Precipitation'
 
 
+av_pred_clim3 <- aggregate(predicted_clim3$Temperature, list(year=predicted_clim3$year), FUN=mean)
+names(av_pred_clim3)[names(av_pred_clim3)=='x'] <- 'Temperature'
+av_pred_clim3 <- data.frame(av_pred_clim3$year, av_pred_clim3$Temperature, pred_precip3$Precipitation)
+names(av_pred_clim3)[names(av_pred_clim3)=='av_pred_clim3.year'] <- 'Year'
+names(av_pred_clim3)[names(av_pred_clim3)=='av_pred_clim3.Temperature'] <- 'Temperature'
+names(av_pred_clim3)[names(av_pred_clim3)=='pred_precip3.Precipitation'] <- 'Precipitation'
 
+av_pred_clim4 <- aggregate(predicted_clim4$Temperature, list(year=predicted_clim4$year), FUN=mean)
+names(av_pred_clim4)[names(av_pred_clim4)=='x'] <- 'Temperature'
+av_pred_clim4 <- data.frame(av_pred_clim4$year, av_pred_clim4$Temperature, pred_precip4$Precipitation)
+names(av_pred_clim4)[names(av_pred_clim4)=='av_pred_clim4.year'] <- 'Year'
+names(av_pred_clim4)[names(av_pred_clim4)=='av_pred_clim4.Temperature'] <- 'Temperature'
+names(av_pred_clim4)[names(av_pred_clim4)=='pred_precip4.Precipitation'] <- 'Precipitation'
 
+p <- ggplot() +
+  geom_line(data=av_pred_clim5, mapping= aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim5, mapping=aes(x=Year, y=Precipitation/40), color='blue') +
+  geom_line(data=av_pred_clim1, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim1, mapping=aes(x=Year,y=Precipitation/40), color='blue')+
+  geom_line(data=av_pred_clim2, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim2, mapping=aes(x=Year,y=Precipitation/40), color='blue')+ 
+  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim3, mapping=aes(x=Year, y=Precipitation/40), color='blue')+  
+  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Temperature), color='red') + 
+  geom_line(data=av_pred_clim4, mapping=aes(x=Year, y=Precipitation/40), color='blue') + 
+  scale_y_continuous(name = "Annual Average Temperature (Celcius)",
+                     sec.axis = sec_axis(~.*40, name="Annual Total Precipitation (mm)"))+
+  labs(colour = c("Annual Average Temperature (Celcius)", "Annual Total Precipitation (mm)"))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
+p
 
 
-# First we start off with visualising the yield over France
+mean(av_pred_clim1$Precipitation)
+mean(av_pred_clim2$Precipitation)
+mean(av_pred_clim3$Precipitation)
+mean(av_pred_clim4$Precipitation)
+mean(av_pred_clim5$Precipitation)
 
-list.files('~/Desktop/Diss-data/France/Shapefiles', pattern='\\.shp$')
-file.exists('~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp')
-fr_shp <- readOGR(dsn=path.expand("~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp"))
-afg <- fr_shp@polygons
-shape_fr <- as.data.frame(afg[[1]]@Polygons[[1]]@coords)
-plot(fr_shp, col=NA)
+x.sub1 <- subset(av_pred_clim1, Year <2019)
+mean(x.sub1$Precipitation)
+min(x.sub1$Temperature)
+max(x.sub1$Temperature)
 
+x.sub1[which.max(x.sub1$Temperature),]
+x.sub1[which.min(x.sub1$Temperature),]
+av_pred_clim1[which.max(av_pred_clim1$Temperature),]
+av_pred_clim2[which.max(av_pred_clim2$Temperature),]
+av_pred_clim3[which.max(av_pred_clim3$Temperature),]
+av_pred_clim4[which.max(av_pred_clim4$Temperature),]
+av_pred_clim5[which.max(av_pred_clim5$Temperature),]
 
-fbar <- "France/Total_Yield_kgha/Barley/barley-france.tif"
-france_barley <- raster(fbar)
-plot(france_barley)
-plot(fr_shp, add=T)
 
 
-fra_barley_df <- as.data.frame(france_barley, xy=TRUE)
-fra_barley_df$barley.france <- fra_barley_df$barley.france/1000
-ggplot(data = fra_barley_df) +
-  geom_raster(aes(x = x, y = y, fill = barley.france)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Barley Yield (tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
-fmaiz <- "France/Total_Yield_kgha/Maize/France_maize.tif"
-france_maize <- raster(fmaiz)
-plot(france_maize)
-plot(fr_shp, add=T)
-fra_maize_df <- as.data.frame(france_maize, xy=TRUE)
-fra_maize_df$France_maize <- fra_maize_df$France_maize/1000
-ggplot(data = fra_maize_df) +
-  geom_raster(aes(x = x, y = y, fill = France_maize)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Maize Yield (tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
-fpot <- "France/Total_Yield_kgha/Potatoes/France_potato.tif"
-france_potato <- raster(fpot)
-plot(france_potato)
-plot(fr_shp, add=T)
-fra_potat_df <- as.data.frame(france_potato, xy=TRUE)
-fra_potat_df$France_potato <- fra_potat_df$France_potato/1000
-ggplot(data = fra_potat_df) +
-  geom_raster(aes(x = x, y = y, fill = France_potato)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Potato Yield (tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
 
 
-frap <- "France/Total_Yield_kgha/Rapeseed/France_rape.tif"
-france_rapeseed <- raster(frap)
-plot(france_rapeseed)
-plot(fr_shp, add=T)
-fra_rape_df <- as.data.frame(france_rapeseed, xy=TRUE)
-fra_rape_df$France_rape <- fra_rape_df$France_rape/1000
-ggplot(data = fra_rape_df) +
-  geom_raster(aes(x = x, y = y, fill = France_rape)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Rapeseed Yield (tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-
-fsug <- "France/Total_Yield_kgha/Sugarbeet/sugarbeet-france.tif"
-france_beet <- raster(fsug)
-plot(france_beet)
-plot(fr_shp, add=T)
-fra_beet_df <- as.data.frame(france_beet, xy=TRUE)
-fra_beet_df$sugarbeet.france <- fra_beet_df$sugarbeet.france/1000
-ggplot(data = fra_beet_df) +
-  geom_raster(aes(x = x, y = y, fill = sugarbeet.france)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarbeet Yield \n(tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-
-fwheat <- "France/Total_Yield_kgha/Wheat/France_wheat.tif"
-france_wheat <- raster(fwheat)
-plot(france_wheat)
-plot(fr_shp, add=T)
-fra_wheat_df <- as.data.frame(france_wheat, xy=TRUE)
-fra_wheat_df$France_wheat <- fra_wheat_df$France_wheat/1000
-ggplot(data = fra_wheat_df) +
-  geom_raster(aes(x = x, y = y, fill = France_wheat)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Wheat Yield (tonne ha-1)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-# Now the same for area of harvest
-
-fbar_A <- "France/Area/Barley/fr_barley_area.tif"
-france_barley_area <- raster(fbar_A)
-plot(france_barley_area)
-plot(fr_shp, add=T)
-
-fra_barley_df_a <- as.data.frame(france_barley_area, xy=TRUE)
-ggplot(data = fra_barley_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_barley_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Barley Harvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-
-fmaizA <- "France/Area/Maize/fr_maize_area.tif"
-france_maize_area <- raster(fmaizA)
-plot(france_maize_area)
-plot(fr_shp, add=T)
-fra_maize_df_a <- as.data.frame(france_maize_area, xy=TRUE)
-
-ggplot(data = fra_maize_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_maize_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Maize Harvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-fpotA <- "France/Area/Potatoes/fr_potato_area.tif"
-france_potato_area <- raster(fpotA)
-plot(france_potato_area)
-plot(fr_shp, add=T)
-fra_potat_df_a <- as.data.frame(france_potato_area, xy=TRUE)
-
-ggplot(data = fra_potat_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_potato_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Potato Harvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-frapA <- "France/Area/Rapeseed/fr_rape_area.tif"
-france_rapeseed_area <- raster(frapA)
-plot(france_rapeseed_area)
-plot(fr_shp, add=T)
-fra_rape_df_a <- as.data.frame(france_rapeseed_area, xy=TRUE)
-
-ggplot(data = fra_rape_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_rape_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Rapeseed Harvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-
-fsugA <- "France/Area/Sugarbeet/fr_sugbeet_area.tif"
-france_beet_area <- raster(fsugA)
-plot(france_beet_area)
-plot(fr_shp, add=T)
-fra_beet_df_a <- as.data.frame(france_beet_area, xy=TRUE)
-
-ggplot(data = fra_beet_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_sugbeet_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Sugarbeet \nHarvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-fwheatA <- "France/Area/Wheat/fr_wheat_area.tif"
-france_wheat_a <- raster(fwheatA)
-plot(france_wheat_a)
-plot(fr_shp, add=T)
-fra_wheat_df_a <- as.data.frame(france_wheat_a, xy=TRUE)
-
-ggplot(data = fra_wheat_df_a) +
-  geom_raster(aes(x = x, y = y, fill = fr_wheat_area)) +
-  scale_fill_gradientn(colours=rev(brewer.pal(7, "Spectral")),
-                       na.value="white")+
-  geom_polygon(data=shape_fr, aes(x=V1, y=V2), 
-               fill=NA,color="black", size=1)+
-  scale_alpha(range = c(0.1, 0.65), guide = "none")+
-  labs(x="Longitude (degree)", y="Latitude (degree)", fill="Wheat Harvested \nArea (ha)") +
-  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10), legend.key.height=unit(1, "cm"))
-
-# Lets add the sand percentage in the mix now
-Fr_sand <- "~/Desktop/Diss-data/France/Sand/Fr_sand.tif"
-Fr_sand <- raster(Fr_sand)
-plot(Fr_sand)
-plot(Shp_Frr, add=T)
-
-### OK now for the big guns. We are downloading the FAOstat time series data for 
-# area and yields in france since idk how long but a long long time!! This is the 
-# moment where we freak - there will be another freak when we get to temp and precipitation.
-# Sand however will be easy so that will be the congrats you made it moment.
-
-import("~/Desktop/Diss-data/France/France_crop_1961_2018.csv")
-convert("~/Desktop/Diss-data/France/France_crop_1961_2018.csv", "~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
-import("~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
-Dat_faostat_fr <- read_rds("~/Desktop/Diss-data/France/France_crop_1961_2018.rds")
-
-
-## Well that was much easier than expected... Now onto the next bit - temp and precipitation
-
-## Now precipitation as a dataframe tibble.
-
-Stk_precip <- brick("~/Desktop/Global Weather/Model 1/precipitation_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
-Shp_Frr <- shapefile("~/Desktop/Diss-data/France/Shapefiles/Export_Output_3.shp")
-Stk_precip <- Stk_precip %>% crop(Shp_Frr)
-plot(Stk_precip[[1:12]])
-print(Stk_precip[[2]])
-summary(Stk_precip)
-
-dates <- as.array(Stk_precip@z)
-dates <- dates$time[dates$time != "00"]
-
-dates <- as.Date(dates, format="%Y-%m-%d")
-Stk_precip <- setZ(Stk_precip, as.Date(dates))
-
-raspt <- rasterToPoints(Stk_precip)
-dt <- tibble(Layer = names(Stk_precip), dttm = getZ(Stk_precip))
-raspt2 <- raspt %>%
-  as_data_frame() %>%
-  rename(lon = x, lat = y) %>%
-  gather(Layer, value, -lon, -lat) %>%
-  left_join(dt, by = "Layer") %>%
-  dplyr::select(lon, lat, dttm, value)
-colnames(raspt2)
-raspt2 <- raspt2 %>% rename("x" = "lon") 
-raspt2 <- raspt2 %>% rename("y" = "lat")
-
-dates <- as.Date(raspt2$dttm)
-str(dates)
-raspt2$month <- month(dates)
-raspt2$year <- year(dates)
-raspt2$dttm <- NULL
-raspt2 <- raspt2 %>% rename("precip_mm" = "value")
-# Convert from cm to mm
-raspt2$precip_mm <- raspt2$precip_mm*10
-raspt2$temp_centigrade <- NULL
-
-# Now for temperature
-
-Stk_temp <- brick("~/Desktop/Global Weather/Model 1/tempmean_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
-Stk_temp <- Stk_temp %>% crop(Shp_Frr)
-plot(Stk_temp[[1:12]])
-print(Stk_temp[[2]])
-summary(Stk_temp)
-
-dates <- as.array(Stk_temp@z)
-dates <- dates$time[dates$time != "00"]
-
-dates <- as.Date(dates, format="%Y-%m-%d")
-Stk_temp <- setZ(Stk_temp, as.Date(dates))
-
-fr_temp <- rasterToPoints(Stk_temp)
-dtt <- data_frame(Layer = names(Stk_temp), dttm = as.Date(getZ(Stk_temp)))
-fr_temp2 <- fr_temp %>%
-  as_data_frame() %>%
-  rename(lon = x, lat = y) %>%
-  gather(Layer, value, -lon, -lat) %>%
-  left_join(dtt, by = "Layer") %>%
-  dplyr::select(lon, lat, dttm, value)
-colnames(fr_temp2)
-fr_temp2 <- fr_temp2 %>% rename("x" = "lon") 
-fr_temp2 <- fr_temp2 %>% rename("y" = "lat")
-
-dates <- fr_temp2$dttm
-str(dates)
-fr_temp2$month <- month(dates)
-fr_temp2$year <- year(dates)
-fr_temp2$dttm <- NULL
-fr_temp2$precip_mm <- NULL
-fr_temp2 <- fr_temp2 %>% rename("temp_centigrade" = "value")
-
-France_weather <- merge(fr_temp2,raspt2,by=c('x', 'y', 'month', 'year'))
-
-# Now for evapotranspiration
-
-Stk_evp <- brick("~/Desktop/Global Weather/Model 1/evspsbl_rcp85_land-gcm_global_60km_01_mon_189912-209911.nc")
-Stk_evp <- Stk_evp %>% crop(Shp_Frr)
-
-plot(Stk_evp[[1:12]])
-print(Stk_evp[[2]])
-summary(Stk_evp)
-
-dates <- as.array(Stk_evp@z)
-dates <- dates$time[dates$time != "00"]
-
-dates <- as.Date(dates, format="%Y-%m-%d")
-
-Stk_evp <- setZ(Stk_evp, as.Date(dates))
-
-fr_evp <- rasterToPoints(Stk_evp)
-Stk_evp <- dropLayer(Stk_evp, "band")
-dttt <- data_frame(Layer = names(Stk_evp), dttm = as.Date(getZ(Stk_evp)))
-fr_evp2 <- fr_evp %>%
-  as_data_frame() %>%
-  rename(lon = x, lat = y) %>%
-  gather(Layer, value, -lon, -lat) %>%
-  left_join(dttt, by = "Layer") %>%
-  dplyr::select(lon, lat, dttm, value)
-colnames(fr_evp2)
-fr_evp2 <- fr_evp2 %>% rename("x" = "lon") 
-fr_evp2 <- fr_evp2 %>% rename("y" = "lat")
-
-dates <- fr_evp2$dttm
-str(dates)
-fr_evp2$month <- month(dates)
-fr_evp2$year <- year(dates)
-fr_evp2$dttm <- NULL
-fr_evp2$precip_mm <- NULL
-fr_evp2 <- fr_evp2 %>% rename("pet_mm" = "value")
-
-# I think these values are in meters so let's convert them to mm
-fr_evp2$pet_mm <- fr_evp2$pet_mm*1000
-
-France_weather <- merge(France_weather,fr_evp2,by=c('x', 'y', 'month', 'year'))
-France_weather$pet_mm.x <- NULL
-France_weather$pet_mm.y <- NULL
-France_weather <- France_weather %>% mutate(adjusted_pr = case_when(
-  month == 1~ as.numeric(precip_mm)*31,
-  month == 3~ as.numeric(precip_mm)*31,
-  month ==5~ as.numeric(precip_mm)*31,
-  month ==7~ as.numeric(precip_mm)*31,
-  month ==8~ as.numeric(precip_mm)*31,
-  month ==10~ as.numeric(precip_mm)*31,
-  month ==12 ~ as.numeric(precip_mm)*31,
-  month == 4~ as.numeric(precip_mm)*30,
-  month ==6~ as.numeric(precip_mm)*30,
-  month ==9~ as.numeric(precip_mm)*30,
-  month ==11 ~ as.numeric(precip_mm)*30, 
-  month==2~ as.numeric(precip_mm)*28 ))
-# OK we have merged everything together!!! Now let's make it a nested tibble
-# THIS HAS NOT BEEN PROVED TO WORK SO WE'RE NOT TOUCHING IT UNTIL WE CAN FIGURE OUT AND UPLOAD PET_MM!!!
-France_weather <- France_weather %>%
-  group_nest(x, y)
-
-France_weather$cell_no <- c(1:306)
-France_weather <- France_weather[, c(1, 2, 4, 3)]
-print(France_weather[[4]][[1]])
-France_weather <- France_weather %>% mutate(filtered = map(data, ~ filter(., year >= 1961)))
-France_weather$data <- NULL
-
-saveRDS(France_weather, "~/Desktop/Diss-data/France/France_weather.rds")
+
+
+
+
+
+
+
+
 
