@@ -1316,7 +1316,13 @@ ggplot()+
   theme(axis.line = element_line(color = "black"))
 
 
-
+crops <- read_csv("~/Desktop/Diss-data/Sweden/compare-crops.csv")
+ggplot()+
+  geom_line(data=crops, aes(x=Year, y=Total.Carbon, colour=Crop))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Crop") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
 
 
 
