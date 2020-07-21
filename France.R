@@ -1297,35 +1297,50 @@ av_pred_clim5[which.max(av_pred_clim5$Temperature),]
 #############ß
 
 
-manure <- read_csv("~/Desktop/Diss-data/Sweden/Manure/compare-manure.csv")
+manure32 <- read_csv("~/Desktop/Diss-data/Sweden/Manure/compare-manure.csv")
 
 ggplot()+
-  geom_line(data=manure, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  geom_line(data=manure32, aes(x=Year, y=Total.Carbon, colour=Manure))+
   labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
   theme(panel.background = element_rect(fill = "white", colour = "white"))+
   theme(axis.line = element_line(color = "black"))
 
 
-x.sub2 <- subset(manure, Year >2094)
+x.sub2 <- subset(manure, Year >2019, Year <2030)
+x.sub3 <- subset(x.sub2, Year < 2030)
 ggplot()+
-  geom_line(data=x.sub2, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  geom_line(data=x.sub3, aes(x=Year, y=Total.Carbon, colour=Manure))+
   labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
   theme(panel.background = element_rect(fill = "white", colour = "white"))+
   theme(axis.line = element_line(color = "black"))
 
 
-crops <- read_csv("~/Desktop/Diss-data/Sweden/compare-crops.csv")
+crops32 <- read_csv("~/Desktop/Diss-data/Sweden/compare-crops.csv")
 ggplot()+
-  geom_line(data=crops, aes(x=Year, y=Total.Carbon, colour=Crop))+
+  geom_line(data=crops32, aes(x=Year, y=Total.Carbon, colour=Crop))+
   labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Crop") +
   theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
   theme(panel.background = element_rect(fill = "white", colour = "white"))+
   theme(axis.line = element_line(color = "black"))
 
+manure38 <- read_csv("~/Desktop/Diss-data/Sweden/Manure/compare-manure-38.csv")
+ggplot()+
+  geom_line(data=manure38, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="anure Type") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
 
-
+x.sub4 <- subset(manure38, Year >2019, Year <2030)
+x.sub5 <- subset(x.sub4, Year < 2030)
+ggplot()+
+  geom_line(data=x.sub5, aes(x=Year, y=Total.Carbon, colour=Manure))+
+  labs(x="Year", y="Total Carbon Stock (t ha-1)", fill="Manure Type") +
+  theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x=element_text(size=9), legend.title = element_text(size=10))+
+  theme(panel.background = element_rect(fill = "white", colour = "white"))+
+  theme(axis.line = element_line(color = "black"))
 
 
 
